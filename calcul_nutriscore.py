@@ -47,13 +47,12 @@ class NutriScore:
         print("Colonnes de self.grille:", self.grille.columns)
         self.configs = configs
         self.nutriscore = self.calcul_nutriscore()
-        self.plot = self.plot_nutriscore()
+        #self.plot = self.plot_nutriscore()
 
     def calcul_nutriscore(self):
         data = self.data.copy()
         data['nutriscore'] = 14
-        print("Colonnes de data:", data.columns)  # Ligne de débogage
-
+ 
         grillecolname = self.configs['grillecolname']
 
         for nutrient in grillecolname:
@@ -91,15 +90,15 @@ class NutriScore:
                                     break
         return data
     
-    def plot_nutriscore(self):
-            # Tracer l'histogramme des valeurs de Nutri-Score
-        plt.figure(figsize=(10, 6))
-        plt.hist(self.nutriscore['nutriscore'].dropna(), bins=15, edgecolor='k', alpha=0.7)
-        plt.title('Répartition des valeurs de Nutri-Score')
-        plt.xlabel('Nutri-Score')
-        plt.ylabel('Fréquence')
-        plt.grid(True)
-        plt.show()
+    # def plot_nutriscore(self):
+    #         # Tracer l'histogramme des valeurs de Nutri-Score
+    #     plt.figure(figsize=(10, 6))
+    #     plt.hist(self.nutriscore['nutriscore'].dropna(), bins=15, edgecolor='k', alpha=0.7)
+    #     plt.title('Répartition des valeurs de Nutri-Score')
+    #     plt.xlabel('Nutri-Score')
+    #     plt.ylabel('Fréquence')
+    #     plt.grid(True)
+    #     plt.show()
 
 
     def get_data(path, configs):
@@ -121,9 +120,12 @@ def main():
     nutri_score_instance = NutriScore(nutrition_table_normal, path_grille, configs)
     nutrition_table_nutriscore = nutri_score_instance.nutriscore
     #nutrition_table_nutriscore.plot_nutriscore()
-    #print(nutrition_table.head())
-    #print(nutrition_table_normal.head())
+    print(nutrition_table.head())
+    print(nutrition_table_normal.head())
     print(nutrition_table_nutriscore.head(30))
+
+    output_path = '/Users/fabreindira/Library/CloudStorage/OneDrive-telecom-paristech.fr/MS_BGD/KitBigData/Projet_kitbigdata/nutrition_table_nutriscore.csv'
+    nutrition_table_nutriscore.to_csv(output_path, index=False)
 
     return nutrition_table, nutrition_table_normal, nutrition_table_nutriscore
  
