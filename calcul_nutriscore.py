@@ -4,16 +4,16 @@ import matplotlib.pyplot as plt
 import re
 from pathlib import Path
 
-class datatools:
+class Datatools:
+    @staticmethod #méthode indépendant de l'état de l'instance
     def get_value_from_string(string):
     # Utilisation de re.findall pour extraire les nombres (flottants et entiers)
         numbers = re.findall(r"\d+\.\d+|\d+", string)
         # Convertir les nombres extraits en float ou int
-        numbers = [float(num) if '.' in num else int(num) for num in numbers]
+        numbers = [float(num) for num in numbers]
         return numbers
 
-
-class preprocessing:
+class Preprocessing:
     def __init__(self, path, configs):
         self.rawdata = pd.read_csv(path, sep = ',')
         self.configs = configs
@@ -21,12 +21,13 @@ class preprocessing:
         self.normaldata = self.set_dv_normalisation()
     
     def get_raw_nutrition(self):
-        return self.rawdata['nutrition']
+        return self.rawdata[['id','nutrition']]
     
     def get_formatted_nutrition(self):
         data = self.get_raw_nutrition()
-        formatted_data = data.apply(datatools.get_value_from_string)
+        formatted_data = data['nutrition'].apply(lambda x: Datatools.get_value_from_string(x))
         table = pd.DataFrame(formatted_data.tolist(), columns=self.configs['nutritioncolname'])
+        table['id'] = data['id'].values
         return table
     
     def set_dv_normalisation(self):
@@ -35,6 +36,7 @@ class preprocessing:
         dv_calories = self.configs['dv_calories']
         fttable = self.formatdata
         table = pd.DataFrame()
+        table['id'] = fttable['id']
         table['dv_calories_%'] = fttable['calories'] * 100 / dv_calories
         for col in self.configs['nutritioncolname'][1:]:
             table[f'dv_{col}'] = fttable[col] * dv_calories /fttable['calories']
@@ -43,15 +45,15 @@ class preprocessing:
 class NutriScore:
     def __init__(self, data, grille, configs):
         self.data = data
-        self.grille = pd.read_csv(grille, sep = ';')
-        print("Colonnes de self.grille:", self.grille.columns)
+        self.grille = pd.read_csv(grille, sep = ',')
+        #print("Colonnes de self.grille:", self.grille.columns)
         self.configs = configs
         self.nutriscore = self.calcul_nutriscore()
         #self.plot = self.plot_nutriscore()
 
     def calcul_nutriscore(self):
         data = self.data.copy()
-        data['nutriscore'] = 14
+        data['nutriscore'] = 14.0 #type float
  
         grillecolname = self.configs['grillecolname']
 
@@ -102,8 +104,8 @@ class NutriScore:
 
 
     def get_data(path, configs):
-        nutrition_table = preprocessing(path, configs).formatdata
-        nutrition_table_normal = preprocessing(path, configs).normaldata
+        nutrition_table = Preprocessing(path, configs).formatdata
+        nutrition_table_normal = Preprocessing(path, configs).normaldata
         return nutrition_table, nutrition_table_normal
 
 def main():
@@ -115,17 +117,17 @@ def main():
     'dv_calories' : 2000
     }
 
-    nutrition_table = preprocessing(path, configs).formatdata
-    nutrition_table_normal = preprocessing(path, configs).normaldata
+    nutrition_table = Preprocessing(path, configs).formatdata
+    nutrition_table_normal = Preprocessing(path, configs).normaldata
     nutri_score_instance = NutriScore(nutrition_table_normal, path_grille, configs)
     nutrition_table_nutriscore = nutri_score_instance.nutriscore
     #nutrition_table_nutriscore.plot_nutriscore()
     print(nutrition_table.head())
     print(nutrition_table_normal.head())
-    print(nutrition_table_nutriscore.head(30))
+    print(nutrition_table_nutriscore.head())
 
-    output_path = '/Users/fabreindira/Library/CloudStorage/OneDrive-telecom-paristech.fr/MS_BGD/KitBigData/Projet_kitbigdata/nutrition_table_nutriscore.csv'
-    nutrition_table_nutriscore.to_csv(output_path, index=False)
+    # output_path = '/Users/fabreindira/Library/CloudStorage/OneDrive-telecom-paristech.fr/MS_BGD/KitBigData/Projet_kitbigdata/nutrition_table_nutriscore.csv'
+    # nutrition_table_nutriscore.to_csv(output_path, index=False)
 
     return nutrition_table, nutrition_table_normal, nutrition_table_nutriscore
  
