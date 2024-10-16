@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import re
 from pathlib import Path
+
 class Datatools:
     @staticmethod # method independent of the instance state
     def get_value_from_string(string):
@@ -14,6 +15,7 @@ class Datatools:
         except Exception as e:
             print(f"Error while extracting numbers from string : {e}")
             return []
+        
 class Preprocessing:
     def __init__(self, path, configs):
         try:
@@ -64,6 +66,7 @@ class Preprocessing:
         except Exception as e:
             print(f"Erreur inattendue : {e}")
             return pd.DataFrame()
+        
 def main():
     path = '/Users/fabreindira/Library/CloudStorage/OneDrive-telecom-paristech.fr/MS_BGD/KitBigData/Projet_kitbigdata/data_base/RAW_recipes.csv'
     configs = {
@@ -71,11 +74,13 @@ def main():
     'grillecolname':['dv_calories_%', 'dv_sat_fat_%', "dv_sugar_%", 'dv_sodium_%', 'dv_protein_%'],
     'dv_calories' : 2000
     }
+
     nutrition_table = Preprocessing(path, configs).formatdata
     nutrition_table_normal = Preprocessing(path, configs).normaldata
     print(nutrition_table.head())
     print(nutrition_table_normal.head())
     return nutrition_table, nutrition_table_normal
+
 if __name__ == '__main__':
     main()
 
