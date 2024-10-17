@@ -22,31 +22,35 @@ class NutriScore:
         for nutrient in grillecolname:
             if nutrient in self.grille.columns:
                 nutrient_grille = self.grille
-                first_row = nutrient_grille.iloc[0]
-                max_value = first_row[nutrient]
-                points = first_row['points']
-
                 nutrient_values = data[nutrient].values
 
                 if nutrient == "dv_protein_%":
                     # Vectorized operation for "dv_protein_%"
-                    mask = -nutrient_values <= max_value
-                    data.loc[mask, 'nutriscore'] -= points
-
-                    for _, grille_row in nutrient_grille.iterrows():
-                        mask = (-nutrient_values > max_value) & (-nutrient_values <= grille_row[nutrient])
+                    for i, grille_row in nutrient_grille.iterrows():
+                        if i == 0:
+                            prev_value = -np.inf  # Si c'est la première ligne, utiliser -infini comme valeur inférieure
+                        else:
+                            prev_value = nutrient_grille[nutrient].iloc[i-1]
+                        if np.isnan(grille_row[nutrient]):
+                            mask = (-nutrient_values > prev_value)
+                            data.loc[mask, 'nutriscore'] -= grille_row['points']
+                            break
+                        mask = (-nutrient_values > prev_value) & (-nutrient_values <= grille_row[nutrient])
                         data.loc[mask, 'nutriscore'] -= grille_row['points']
-                        max_value = grille_row[nutrient]
 
                 else:
                     # Vectorized operation for other nutrients
-                    mask = nutrient_values <= max_value
-                    data.loc[mask, 'nutriscore'] -= points
-
-                    for _, grille_row in nutrient_grille.iterrows():
-                        mask = (nutrient_values > max_value) & (nutrient_values <= grille_row[nutrient])
+                    for i, grille_row in nutrient_grille.iterrows():
+                        if i == 0:
+                            prev_value = -np.inf  # Si c'est la première ligne, utiliser -infini comme valeur inférieure
+                        else:
+                            prev_value = nutrient_grille[nutrient].iloc[i-1]
+                        if np.isnan(grille_row[nutrient]):
+                            mask = (nutrient_values > prev_value)
+                            data.loc[mask, 'nutriscore'] -= grille_row['points']
+                            break
+                        mask = (nutrient_values > prev_value) & (nutrient_values <= grille_row[nutrient])
                         data.loc[mask, 'nutriscore'] -= grille_row['points']
-                        max_value = grille_row[nutrient]
 
         return data
 
