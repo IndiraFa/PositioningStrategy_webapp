@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import re
 from pathlib import Path
+import seaborn as sns
 
 from preprocess import Preprocessing, Datatools
     
@@ -12,6 +12,7 @@ class NutriScore:
         self.grille = pd.read_csv(grille, sep = ',')
         self.configs = configs
         self.nutriscore = self.calcul_nutriscore()
+        self.nutriscore_label = self.set_scorelabel()
 
     def calcul_nutriscore(self):
         data = self.data.copy()
@@ -53,11 +54,46 @@ class NutriScore:
                         data.loc[mask, 'nutriscore'] -= grille_row['points']
 
         return data
+    
+    def set_scorelabel(self):
+        score = self.nutriscore
+        label = np.empty(score.shape[0], dtype=str)
+        label[np.where(score >= 12)] = 'A'
+        label[np.where((score >= 9) & (score < 12))] = 'B'
+        label[np.where((score >= 6) & (score < 9))] = 'C'
+        label[np.where((score >= 3) & (score < 6))] = 'D'
+        label[np.where(score < 3)] = 'E'
+        return label
 
     def get_data(path, configs):
         nutrition_table = Preprocessing(path, configs).formatdata
         nutrition_table_normal = Preprocessing(path, configs).normaldata
         return nutrition_table, nutrition_table_normal
+
+class plot:
+    def __init__(self, data, title=None, xlabel=None, ylabel=None, output_path=None):
+        self.data = data
+        self.title = title
+        self.xlabel = xlabel
+        self.ylabel = ylabel
+        self.output_path = output_path
+    
+    def plot_distrubution(self):
+        fig, ax = plt.subplots()
+        ax.hist(self.data)
+        ax.set_title(self.title)
+        ax.set_xlabel(self.xlabel)
+        ax.set_ylabel(self.ylabel)
+        plt.savefig(self.output_path)
+    
+    def plot_distribution_label(self, labels):
+        fig, ax = plt.subplots()
+        sns.countplot(scores_labelled, order=labels)
+        ax.set_title(self.title)
+        ax.set_xlabel(self.xlabel)
+        ax.set_ylabel(self.ylabel)
+        plt.savefig(self.output_path)
+
 
 def main():
     path = '/Users/fabreindira/Library/CloudStorage/OneDrive-telecom-paristech.fr/MS_BGD/KitBigData/Projet_kitbigdata/data_base/RAW_recipes.csv'
@@ -73,10 +109,15 @@ def main():
     nutri_score_instance = NutriScore(nutrition_table_normal, path_grille, configs)
     nutrition_table_nutriscore = nutri_score_instance.nutriscore
     print(nutrition_table_nutriscore)
+    print(nutri_score_instance.nutriscore_label)
 
     # output_path = '/Users/fabreindira/Library/CloudStorage/OneDrive-telecom-paristech.fr/MS_BGD/KitBigData/Projet_kitbigdata/nutrition_table_nutriscore.csv'
-    # nutrition_table_nutriscore.to_csv(output_path, index=False)
+    # nutrition_table_nutriscore.to_csv(output_path, index=False, header=True, sep=',')
 
+    # Plotting
+    plot(nutrition_table_nutriscore['nutriscore'], title='Nutriscore distribution', xlabel='Nutriscore', ylabel='Number of recipes', output_path='nutriscore_distribution.png').plot_distrubution()
+    plot(nutri_score_instance.nutriscore_label, title='Nutriscore label distribution', xlabel='Nutriscore label', ylabel='Number of recipes', output_path='nutriscore_label_distribution.png').plot_distribution_label(labels=['A', 'B', 'C', 'D', 'E'])
+    
     return nutrition_table_nutriscore
 
 if __name__ == '__main__':
