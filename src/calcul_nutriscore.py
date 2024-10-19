@@ -12,6 +12,7 @@ class NutriScore:
         self.grille = pd.read_csv(grille, sep = ',')
         self.configs = configs
         self.nutriscore = self.calcul_nutriscore()
+        self.nutriscore_label = self.set_scorelabel()
 
     def calcul_nutriscore(self):
         data = self.data.copy()
@@ -53,6 +54,16 @@ class NutriScore:
                         data.loc[mask, 'nutriscore'] -= grille_row['points']
 
         return data
+    
+    def set_scorelabel(self):
+        score = self.nutriscore
+        label = np.empty(score.shape[0], dtype=str)
+        label[np.where(score >= 12)] = 'A'
+        label[np.where((score >= 9) & (score < 12))] = 'B'
+        label[np.where((score >= 6) & (score < 9))] = 'C'
+        label[np.where((score >= 3) & (score < 6))] = 'D'
+        label[np.where(score < 3)] = 'E'
+        return label
 
     def get_data(path, configs):
         nutrition_table = Preprocessing(path, configs).formatdata
