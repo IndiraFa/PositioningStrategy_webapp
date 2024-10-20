@@ -1,49 +1,47 @@
 import pandas as pd
-import numpy as np
 import re
-from pathlib import Path
 from tabulate import tabulate
 
-
 class Datatools:
-    @staticmethod # method independent of the instance state
+    @staticmethod
     def get_value_from_string(string):
-        try : 
-            # use of re.findall to extract numbers (floats and integers)
+        try:
+            # Extract numbers from the string using regular expressions
             numbers = re.findall(r"\d+\.\d+|\d+", string)
-            # Convert the extracted numbers to float or int
-            numbers = [float(num) for num in numbers]
-            return numbers
+            # Convert the extracted numbers to floats
+            return [float(num) for num in numbers]
         except Exception as e:
-            print(f"Error while extracting numbers from string : {e}")
+            # Print an error message if extraction fails
+            print(f"Error while extracting numbers from string: {e}")
             return []
-        
+
 class Preprocessing:
     def __init__(self, path, configs):
         try:
             # Load raw data from the specified CSV file
-            self.rawdata = pd.read_csv(path, sep = ',')
+            self.rawdata = pd.read_csv(path, sep=',')
         except FileNotFoundError:
             # Print an error message if the file is not found
             print(f"File {path} not found")
         self.configs = configs
+        # Perform initial data processing steps
         self.formatdata = self.get_formatted_nutrition()
         self.normaldata = self.set_dv_normalisation()
         self.prefiltredata = self.prefiltrage()
         self.gaussiandata = self.gaussian_normalisation()
-    
+
     def get_raw_nutrition(self):
         try:
-            # Extraction of id and nutrition columns only
-            return self.rawdata[['id','nutrition']]
+            # Extract 'id' and 'nutrition' columns from raw data
+            return self.rawdata[['id', 'nutrition']]
         except KeyError:
             # Print an error message if the columns are not found
             print("Columns 'id' and 'nutrition' not found in the dataset")
             return pd.DataFrame()
-    
+
     def get_formatted_nutrition(self):
         try:
-            # Creation of new columns for nutritional data
+            # Format the nutrition data by extracting numerical values
             data = self.get_raw_nutrition()
             formatted_data = data['nutrition'].apply(lambda x: Datatools.get_value_from_string(x))
             # Create a DataFrame with the formatted data and add the 'id' column
@@ -52,16 +50,16 @@ class Preprocessing:
             return table
         except KeyError as e:
             # Print an error message if formatting fails
-            print(f"Error while formatting nutrition data : {e}")
+            print(f"Error while formatting nutrition data: {e}")
+            return pd.DataFrame()
         except Exception as e:
             # Print an unexpected error message
-            print(f"Unexpected error : {e}")
+            print(f"Unexpected error: {e}")
             return pd.DataFrame()
-    
+
     def set_dv_normalisation(self):
         try:
-            # Creation of a dv_calories_% column to normalize nutritional values
-            # Against the recommended daily intake
+            # Normalize the nutrition data based on daily values (DV)
             dv_calories = self.configs['dv_calories']
             fttable = self.formatdata
             table = pd.DataFrame()
@@ -69,15 +67,17 @@ class Preprocessing:
             # Calculate the percentage of daily values for each nutrient
             table['dv_calories_%'] = (fttable['calories'] * 100 / dv_calories).round(2)
             for col in self.configs['nutritioncolname'][1:]:
-                table[f'dv_{col}'] = (fttable[col] * dv_calories /fttable['calories']).round(2)
+                table[f'dv_{col}'] = (fttable[col] * dv_calories / fttable['calories']).round(2)
+            self.normaldata = table
             return table
         except KeyError as e:
-            print(f"Erreur lors de la normalisation des données : {e}")
+            # Print an error message if normalization fails
+            print(f"Error during data normalization: {e}")
             return pd.DataFrame()
         except Exception as e:
-            print(f"Erreur inattendue : {e}")
+            # Print an unexpected error message
+            print(f"Unexpected error: {e}")
             return pd.DataFrame()
-    
 
     def prefiltrage(self):
         try:
@@ -175,21 +175,23 @@ class Preprocessing:
             print(f"Unexpected error: {e}")
             return pd.DataFrame()
 
-
 def main():
-    path = '/Users/fabreindira/Library/CloudStorage/OneDrive-telecom-paristech.fr/MS_BGD/KitBigData/Projet_kitbigdata/data_base/RAW_recipes.csv'
+    path = '/Users/darryld/Desktop/Télécom_Paris/BGDIA700-Kit_Big_Data/Projet_kitBigData/RAW_recipes.csv'
     configs = {
-    'nutritioncolname':['calories', 'total_fat_%', 'sugar_%', 'sodium_%', 'protein_%', 'sat_fat_%', 'carbs_%'],
-    'grillecolname':['dv_calories_%', 'dv_sat_fat_%', "dv_sugar_%", 'dv_sodium_%', 'dv_protein_%'],
-    'dv_calories' : 2000
+        'nutritioncolname': ['calories', 'total_fat_%', 'sugar_%', 'sodium_%', 'protein_%', 'sat_fat_%', 'carbs_%'],
+        'grillecolname': ['dv_calories_%', 'dv_sat_fat_%', 'dv_sugar_%', 'dv_sodium_%', 'dv_protein_%'],
+        'dv_calories': 2000
     }
 
-    nutrition_table = Preprocessing(path, configs).formatdata
-    nutrition_table_normal = Preprocessing(path, configs).normaldata
+    # Create an instance of the Preprocessing class
+    preprocessing_instance = Preprocessing(path, configs)
+    # Get the formatted and normalized nutrition tables
+    nutrition_table = preprocessing_instance.formatdata
+    nutrition_table_normal = preprocessing_instance.normaldata
+    # Print the first few rows of each table
     print(nutrition_table.head())
     print(nutrition_table_normal.head())
     return nutrition_table, nutrition_table_normal
 
 if __name__ == '__main__':
     main()
-
