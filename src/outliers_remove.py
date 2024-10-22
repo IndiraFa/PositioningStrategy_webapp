@@ -1,4 +1,3 @@
-
 import pandas as pd
 import matplotlib.pyplot as plt
 from tabulate import tabulate
@@ -26,9 +25,13 @@ def display_table(data, title):
     print(tabulate(data.head(10), headers='keys', tablefmt='psql'))
     print("\n")
 
+# Constants for file paths
+PATH_RAW_RECIPES = '/Users/darryld/Desktop/Télécom_Paris/BGDIA700-Kit_Big_Data/Projet_kitBigData/RAW_recipes.csv'
+PATH_NUTRIENT_TABLE = '/Users/darryld/Desktop/Télécom_Paris/BGDIA700-Kit_Big_Data/Projet_kitBigData/nutrient_table.csv'
+
 # Load the data
-path = '/Users/darryld/Desktop/Télécom_Paris/BGDIA700-Kit_Big_Data/Projet_kitBigData/RAW_recipes.csv'
-path_grille = '/Users/darryld/Desktop/Télécom_Paris/BGDIA700-Kit_Big_Data/Projet_kitBigData/nutrient_table.csv'
+path = PATH_RAW_RECIPES
+path_grille = PATH_NUTRIENT_TABLE
 
 # Read the nutrient table data
 grille_data = pd.read_csv(path_grille)
@@ -54,11 +57,17 @@ else:
 
 print("\n")
 
+# Perform denormalization
+denormalizedata, denormalized_outliers = preprocessing_instance.denormalizedata, preprocessing_instance.denormalized_outliers
+print("Denormalization completed")
+
 # Display all tables
-display_table(preprocessing_instance.formatdata.drop(columns=['id']), "raw data table")
-display_table(preprocessing_instance.normaldata.drop(columns=['id']), "formatted raw data table")
+display_table(preprocessing_instance.formatdata, "raw data table")
+display_table(preprocessing_instance.normaldata, "formatted raw data table")
 display_table(grille_data, "nutrient table data")
 display_table(normalized_data, "normalized data table no Outliers")
+display_table(denormalizedata, "denormalized data table")
+display_table(denormalized_outliers, "denormalized outliers table")
 
 # Plot the distributions
 #plot_distribution(preprocessing_instance.formatdata.drop(columns=['id']), plot_type='dot', title_prefix="Distribution of formatted raw data")

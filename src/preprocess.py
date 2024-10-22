@@ -1,49 +1,51 @@
 import pandas as pd
-import numpy as np
 import re
-from pathlib import Path
 from tabulate import tabulate
 
-
 class Datatools:
-    @staticmethod # method independent of the instance state
+    @staticmethod
     def get_value_from_string(string):
-        try : 
-            # use of re.findall to extract numbers (floats and integers)
+        try:
+            # Extract numbers from the string using regular expressions
             numbers = re.findall(r"\d+\.\d+|\d+", string)
-            # Convert the extracted numbers to float or int
-            numbers = [float(num) for num in numbers]
-            return numbers
+            # Convert the extracted numbers to floats
+            return [float(num) for num in numbers]
         except Exception as e:
-            print(f"Error while extracting numbers from string : {e}")
+            # Print an error message if extraction fails
+            print(f"Error while extracting numbers from string: {e}")
             return []
-        
+
 class Preprocessing:
     def __init__(self, path, configs):
         try:
             # Load raw data from the specified CSV file
-            self.rawdata = pd.read_csv(path, sep = ',')
+            self.rawdata = pd.read_csv(path, sep=',')
         except FileNotFoundError:
             # Print an error message if the file is not found
             print(f"File {path} not found")
         self.configs = configs
+        # Initialize dictionaries to store mu and sigma values
+        self.mu_values = {}
+        self.sigma_values = {}
+        # Perform initial data processing steps
         self.formatdata = self.get_formatted_nutrition()
         self.normaldata = self.set_dv_normalisation()
         self.prefiltredata = self.prefiltrage()
-        self.gaussiandata = self.gaussian_normalisation()
-    
+        self.gaussiandata, self.outliers = self.gaussian_normalisation()
+        self.denormalizedata, self.denormalized_outliers = self.Denormalisation(self.gaussiandata, self.outliers)
+
     def get_raw_nutrition(self):
         try:
-            # Extraction of id and nutrition columns only
-            return self.rawdata[['id','nutrition']]
+            # Extract 'id' and 'nutrition' columns from raw data
+            return self.rawdata[['id', 'nutrition']]
         except KeyError:
             # Print an error message if the columns are not found
             print("Columns 'id' and 'nutrition' not found in the dataset")
             return pd.DataFrame()
-    
+
     def get_formatted_nutrition(self):
         try:
-            # Creation of new columns for nutritional data
+            # Format the nutrition data by extracting numerical values
             data = self.get_raw_nutrition()
             formatted_data = data['nutrition'].apply(lambda x: Datatools.get_value_from_string(x))
             # Create a DataFrame with the formatted data and add the 'id' column
@@ -52,16 +54,16 @@ class Preprocessing:
             return table
         except KeyError as e:
             # Print an error message if formatting fails
-            print(f"Error while formatting nutrition data : {e}")
+            print(f"Error while formatting nutrition data: {e}")
+            return pd.DataFrame()
         except Exception as e:
             # Print an unexpected error message
-            print(f"Unexpected error : {e}")
+            print(f"Unexpected error: {e}")
             return pd.DataFrame()
-    
+
     def set_dv_normalisation(self):
         try:
-            # Creation of a dv_calories_% column to normalize nutritional values
-            # Against the recommended daily intake
+            # Normalize the nutrition data based on daily values (DV)
             dv_calories = self.configs['dv_calories']
             fttable = self.formatdata
             table = pd.DataFrame()
@@ -69,15 +71,17 @@ class Preprocessing:
             # Calculate the percentage of daily values for each nutrient
             table['dv_calories_%'] = (fttable['calories'] * 100 / dv_calories).round(2)
             for col in self.configs['nutritioncolname'][1:]:
-                table[f'dv_{col}'] = (fttable[col] * dv_calories /fttable['calories']).round(2)
+                table[f'dv_{col}'] = (fttable[col] * dv_calories / fttable['calories']).round(2)
+            self.normaldata = table
             return table
         except KeyError as e:
-            print(f"Erreur lors de la normalisation des données : {e}")
+            # Print an error message if normalization fails
+            print(f"Error during data normalization: {e}")
             return pd.DataFrame()
         except Exception as e:
-            print(f"Erreur inattendue : {e}")
+            # Print an unexpected error message
+            print(f"Unexpected error: {e}")
             return pd.DataFrame()
-    
 
     def prefiltrage(self):
         try:
@@ -132,40 +136,46 @@ class Preprocessing:
             table_gauss = self.prefiltredata.copy()
             
             initial_outliers_count = len(self.outliers)
-            print(f"Number of rows in the outliers DataFrame before processing: {initial_outliers_count}")
+            print(f"Number of rows in the outliers DataFrame before processing: {initial_outliers_count}") #test unitaire
 
             # Apply Gaussian normalization to each column
             for col in gauss_configs['colname']:
-                table_gauss[col] = (table_gauss[col] - table_gauss[col].mean()) / table_gauss[col].std()
+                mu = table_gauss[col].mean()
+                sigma = table_gauss[col].std()
+                table_gauss[col] = (table_gauss[col] - mu) / sigma
+
+                # Store the mu and sigma values
+                self.mu_values[col] = mu
+                self.sigma_values[col] = sigma
 
             table_gauss = table_gauss.dropna()
 
             # Copy the DataFrame for further processing
-            finalTable_noOutliers = table_gauss.copy()
-            Total_outliers = self.outliers.copy()
+            DF_noOutliers = table_gauss.copy()
+            DF_outliers = self.outliers.copy()
 
-            print(f"Size of finalTable_noOutliers before processing: {len(finalTable_noOutliers)}")
-            print(f"Size of Total_outliers before processing: {len(Total_outliers)}")
+            print(f"Size of DF_noOutliers before processing: {len(DF_noOutliers)}") #test unitaire
+            print(f"Size of Total_outliers before processing: {len(DF_outliers)}") #test unitaire
             print("\n")
 
             # Identify and remove outliers (values >= 3) for each column
-            for col in finalTable_noOutliers.columns:
+            for col in DF_noOutliers.columns:
                 if col == 'id':
                     continue
-                col_outliers = finalTable_noOutliers[finalTable_noOutliers[col] >= 3]
+                col_outliers = DF_noOutliers[DF_noOutliers[col] >= 3]
                 print(f"Number of outliers found in column {col}: {len(col_outliers)}")
-                Total_outliers = pd.concat([Total_outliers, col_outliers])
-                finalTable_noOutliers = finalTable_noOutliers[finalTable_noOutliers[col] < 3].copy()
+                DF_outliers = pd.concat([DF_outliers, col_outliers])
+                DF_noOutliers = DF_noOutliers[DF_noOutliers[col] < 3].copy()
 
             # Store the new outliers
-            self.outliers = Total_outliers.drop_duplicates()
+            self.outliers = DF_outliers.drop_duplicates()
 
             print("\n")
-            print(f"Size of finalTable_noOutliers after processing: {len(finalTable_noOutliers)}")
-            print(f"Size of Total_outliers after processing: {len(Total_outliers)}")
+            print(f"Size of DF_noOutliers after processing: {len(DF_noOutliers)}") #test unitaire
+            print(f"Size of DF_outliers after processing: {len(DF_outliers)}") 
             print("\n")
 
-            return finalTable_noOutliers
+            return DF_noOutliers, DF_outliers
         except KeyError as e:
             # Print an error message if Gaussian normalization fails
             print(f"Error during Gaussian normalization: {e}")
@@ -174,22 +184,49 @@ class Preprocessing:
             # Print an unexpected error message
             print(f"Unexpected error: {e}")
             return pd.DataFrame()
+        
+    def Denormalisation(self, DF_noOutliers, DF_outliers): # denormalisation of the data from the gaussian_normalisation
+        try:
+            # Denormalize the Gaussian normalized data
+            finalDF_noOutliers = DF_noOutliers.copy()
+            finalDF_outliers = DF_outliers.copy()
+            
+            # Combine the columns from grillecolname with dv_total_fat_% and dv_carbs_%
+            columns_to_denormalize = self.configs['grillecolname'] + ['dv_total_fat_%', 'dv_carbs_%']
+            
+            for col in columns_to_denormalize:
+                mu = self.mu_values[col]
+                sigma = self.sigma_values[col]
+                finalDF_noOutliers[col] = finalDF_noOutliers[col] * sigma + mu
+                finalDF_outliers[col] = finalDF_outliers[col] * sigma + mu
 
+            return finalDF_noOutliers, finalDF_outliers
+        except KeyError as e:
+            # Print an error message if denormalization fails
+            print(f"Error during data denormalization: {e}")
+            return pd.DataFrame()
+        except Exception as e:
+            # Print an unexpected error message
+            print(f"Unexpected error: {e}")
+            return pd.DataFrame()
 
 def main():
-    path = '/Users/fabreindira/Library/CloudStorage/OneDrive-telecom-paristech.fr/MS_BGD/KitBigData/Projet_kitbigdata/data_base/RAW_recipes.csv'
+    path = '/Users/darryld/Desktop/Télécom_Paris/BGDIA700-Kit_Big_Data/Projet_kitBigData/RAW_recipes.csv'
     configs = {
-    'nutritioncolname':['calories', 'total_fat_%', 'sugar_%', 'sodium_%', 'protein_%', 'sat_fat_%', 'carbs_%'],
-    'grillecolname':['dv_calories_%', 'dv_sat_fat_%', "dv_sugar_%", 'dv_sodium_%', 'dv_protein_%'],
-    'dv_calories' : 2000
+        'nutritioncolname': ['calories', 'total_fat_%', 'sugar_%', 'sodium_%', 'protein_%', 'sat_fat_%', 'carbs_%'],
+        'grillecolname': ['dv_calories_%', 'dv_sat_fat_%', 'dv_sugar_%', 'dv_sodium_%', 'dv_protein_%'],
+        'dv_calories': 2000
     }
 
-    nutrition_table = Preprocessing(path, configs).formatdata
-    nutrition_table_normal = Preprocessing(path, configs).normaldata
+    # Create an instance of the Preprocessing class
+    preprocessing_instance = Preprocessing(path, configs)
+    # Get the formatted and normalized nutrition tables
+    nutrition_table = preprocessing_instance.formatdata
+    nutrition_table_normal = preprocessing_instance.normaldata
+    # Print the first few rows of each table
     print(nutrition_table.head())
     print(nutrition_table_normal.head())
     return nutrition_table, nutrition_table_normal
 
 if __name__ == '__main__':
     main()
-
