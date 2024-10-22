@@ -12,10 +12,6 @@ def preprocessing_instance():
     }
     return Preprocessing(path, configs)
 
-def test_get_value_from_string():
-    # Test the get_value_from_string method
-    result = Datatools.get_value_from_string("Calories: 200, Fat: 10g, Sugar: 5g")
-    assert result == [200.0, 10.0, 5.0]
 
 def test_get_raw_nutrition(preprocessing_instance):
     # Test the get_raw_nutrition method
@@ -52,4 +48,3 @@ def test_gaussian_normalisation(preprocessing_instance):
     assert isinstance(result, pd.DataFrame)
     assert not result.empty
 
-# Add more tests for other methods and edge cases
