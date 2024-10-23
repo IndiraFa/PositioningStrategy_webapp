@@ -1,6 +1,6 @@
 import pandas as pd
 import re
-from tabulate import tabulate
+#from tabulate import tabulate
 
 class Datatools:
     @staticmethod
