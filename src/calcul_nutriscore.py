@@ -57,13 +57,17 @@ class NutriScore:
     
     def set_scorelabel(self):
         score = self.nutriscore
-        label = np.empty(score.shape[0], dtype=str)
-        label[np.where(score >= 12)] = 'A'
-        label[np.where((score >= 9) & (score < 12))] = 'B'
-        label[np.where((score >= 6) & (score < 9))] = 'C'
-        label[np.where((score >= 3) & (score < 6))] = 'D'
-        label[np.where(score < 3)] = 'E'
-        return label
+        score['label'] = ''
+        if 'nutriscore' not in score.columns:
+            raise ValueError('The nutriscore column is not in the dataframe')
+        else:
+            score['label'] = ''
+            score.loc[score['nutriscore'] >= 12, 'label'] = 'A'
+            score.loc[(score['nutriscore'] >= 9) & (score['nutriscore'] < 12), 'label'] = 'B'
+            score.loc[(score['nutriscore'] >= 6) & (score['nutriscore'] < 9), 'label'] = 'C'
+            score.loc[(score['nutriscore'] >= 3) & (score['nutriscore'] < 6), 'label'] = 'D'
+            score.loc[score['nutriscore'] < 3, 'label'] = 'E'
+            return score
 
     def get_data(path, configs):
         nutrition_table = Preprocessing(path, configs).formatdata
@@ -88,7 +92,7 @@ class plot:
     
     def plot_distribution_label(self, labels):
         fig, ax = plt.subplots()
-        sns.countplot(scores_labelled, order=labels)
+        sns.countplot(self.data, order=labels)
         ax.set_title(self.title)
         ax.set_xlabel(self.xlabel)
         ax.set_ylabel(self.ylabel)
@@ -96,8 +100,11 @@ class plot:
 
 
 def main():
-    path = '/Users/fabreindira/Library/CloudStorage/OneDrive-telecom-paristech.fr/MS_BGD/KitBigData/Projet_kitbigdata/data_base/RAW_recipes.csv'
-    path_grille = '/Users/fabreindira/Library/CloudStorage/OneDrive-telecom-paristech.fr/MS_BGD/KitBigData/Webapp_git/PositioningStrategy_webapp/src/nutrient_table.csv'
+    # path = '/Users/fabreindira/Library/CloudStorage/OneDrive-telecom-paristech.fr/MS_BGD/KitBigData/Projet_kitbigdata/data_base/RAW_recipes.csv'
+    # path_grille = '/Users/fabreindira/Library/CloudStorage/OneDrive-telecom-paristech.fr/MS_BGD/KitBigData/Webapp_git/PositioningStrategy_webapp/src/nutrient_table.csv'
+    path = Path('/Users/phuongnguyen/Documents/cours_BGD_Telecom_Paris_2024/Kit_Big_Data/dataset/RAW_recipes.csv')
+    path_grille = Path('/Users/phuongnguyen/Documents/cours_BGD_Telecom_Paris_2024/Kit_Big_Data/scripts/nutrient_table (1).csv')
+
     configs = {
     'nutritioncolname':['calories', 'total_fat_%', 'sugar_%', 'sodium_%', 'protein_%', 'sat_fat_%', 'carbs_%'],
     'grillecolname':['dv_calories_%', 'dv_sat_fat_%', "dv_sugar_%", 'dv_sodium_%', 'dv_protein_%'],
@@ -116,7 +123,7 @@ def main():
 
     # Plotting
     plot(nutrition_table_nutriscore['nutriscore'], title='Nutriscore distribution', xlabel='Nutriscore', ylabel='Number of recipes', output_path='nutriscore_distribution.png').plot_distrubution()
-    plot(nutri_score_instance.nutriscore_label, title='Nutriscore label distribution', xlabel='Nutriscore label', ylabel='Number of recipes', output_path='nutriscore_label_distribution.png').plot_distribution_label(labels=['A', 'B', 'C', 'D', 'E'])
+    plot(nutri_score_instance.nutriscore_label['label'], title='Nutriscore label distribution', xlabel='Nutriscore label', ylabel='Number of recipes', output_path='nutriscore_label_distribution.png').plot_distribution_label(labels=['A', 'B', 'C', 'D', 'E'])
     
     return nutrition_table_nutriscore
 
