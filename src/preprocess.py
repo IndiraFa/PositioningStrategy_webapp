@@ -1,6 +1,6 @@
 import pandas as pd
 import re
-#from tabulate import tabulate
+from tabulate import tabulate
 
 class Datatools:
     @staticmethod
@@ -51,7 +51,9 @@ class Preprocessing:
             # Create a DataFrame with the formatted data and add the 'id' column
             table = pd.DataFrame(formatted_data.tolist(), columns=self.configs['nutritioncolname'])
             table['id'] = data['id'].values
+            
             return table
+                    
         except KeyError as e:
             # Print an error message if formatting fails
             print(f"Error while formatting nutrition data: {e}")
@@ -69,10 +71,13 @@ class Preprocessing:
             table = pd.DataFrame()
             table['id'] = fttable['id']
             # Calculate the percentage of daily values for each nutrient
-            table['dv_calories_%'] = (fttable['calories'] * 100 / dv_calories).round(2)
+            table['dv_calories_%'] = (fttable['calories'] * 100 / dv_calories).round(3)
             for col in self.configs['nutritioncolname'][1:]:
-                table[f'dv_{col}'] = (fttable[col] * dv_calories / fttable['calories']).round(2)
+                table[f'dv_{col}'] = (fttable[col] * dv_calories / fttable['calories']).round(3)
             self.normaldata = table
+
+            #print(tabulate(table.head(30), headers='keys', tablefmt='pretty'))
+
             return table
         except KeyError as e:
             # Print an error message if normalization fails
@@ -136,7 +141,7 @@ class Preprocessing:
             table_gauss = self.prefiltredata.copy()
             
             initial_outliers_count = len(self.outliers)
-            print(f"Number of rows in the outliers DataFrame before processing: {initial_outliers_count}") #test unitaire
+            print(f"Number of rows in the outliers DataFrame before processing: {initial_outliers_count}") 
 
             # Apply Gaussian normalization to each column
             for col in gauss_configs['colname']:
@@ -154,10 +159,6 @@ class Preprocessing:
             DF_noOutliers = table_gauss.copy()
             DF_outliers = self.outliers.copy()
 
-            print(f"Size of DF_noOutliers before processing: {len(DF_noOutliers)}") #test unitaire
-            print(f"Size of Total_outliers before processing: {len(DF_outliers)}") #test unitaire
-            print("\n")
-
             # Identify and remove outliers (values >= 3) for each column
             for col in DF_noOutliers.columns:
                 if col == 'id':
@@ -169,11 +170,6 @@ class Preprocessing:
 
             # Store the new outliers
             self.outliers = DF_outliers.drop_duplicates()
-
-            print("\n")
-            print(f"Size of DF_noOutliers after processing: {len(DF_noOutliers)}") #test unitaire
-            print(f"Size of DF_outliers after processing: {len(DF_outliers)}") 
-            print("\n")
 
             return DF_noOutliers, DF_outliers
         except KeyError as e:
@@ -197,8 +193,11 @@ class Preprocessing:
             for col in columns_to_denormalize:
                 mu = self.mu_values[col]
                 sigma = self.sigma_values[col]
-                finalDF_noOutliers[col] = finalDF_noOutliers[col] * sigma + mu
-                finalDF_outliers[col] = finalDF_outliers[col] * sigma + mu
+                finalDF_noOutliers[col] = (finalDF_noOutliers[col] * sigma + mu).round(3)
+                finalDF_outliers[col] = (finalDF_outliers[col] * sigma + mu).round(3)
+
+            #print(tabulate(finalDF_noOutliers.head(30), headers='keys', tablefmt='pretty'))
+            #print(tabulate(finalDF_outliers.head(30), headers='keys', tablefmt='pretty'))
 
             return finalDF_noOutliers, finalDF_outliers
         except KeyError as e:
