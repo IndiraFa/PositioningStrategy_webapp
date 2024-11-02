@@ -2,6 +2,12 @@ import pandas as pd
 import re
 #from tabulate import tabulate
 
+configs = {
+        'nutritioncolname': ['calories', 'total_fat_%', 'sugar_%', 'sodium_%', 'protein_%', 'sat_fat_%', 'carbs_%'],
+        'grillecolname': ['dv_calories_%', 'dv_sat_fat_%', 'dv_sugar_%', 'dv_sodium_%', 'dv_protein_%'],
+        'dv_calories': 2000
+}
+
 class Datatools:
     @staticmethod
     def get_value_from_string(string):
@@ -211,12 +217,7 @@ class Preprocessing:
             return pd.DataFrame()
 
 def main():
-    path = '/Users/darryld/Desktop/Télécom_Paris/BGDIA700-Kit_Big_Data/Projet_kitBigData/RAW_recipes.csv'
-    configs = {
-        'nutritioncolname': ['calories', 'total_fat_%', 'sugar_%', 'sodium_%', 'protein_%', 'sat_fat_%', 'carbs_%'],
-        'grillecolname': ['dv_calories_%', 'dv_sat_fat_%', 'dv_sugar_%', 'dv_sodium_%', 'dv_protein_%'],
-        'dv_calories': 2000
-    }
+    path = '/Users/fabreindira/Library/CloudStorage/OneDrive-telecom-paristech.fr/MS_BGD/KitBigData/Projet_kitbigdata/data_base/RAW_recipes.csv'
 
     # Create an instance of the Preprocessing class
     preprocessing_instance = Preprocessing(path, configs)

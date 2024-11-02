@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import os
 
+st.set_page_config(layout="centered")
+
 # Titre de la page
 st.markdown("<h1 style='color:purple;'>Appendix</h1>", unsafe_allow_html=True)
 

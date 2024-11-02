@@ -102,8 +102,8 @@ class plot:
 def main():
     # path = '/Users/fabreindira/Library/CloudStorage/OneDrive-telecom-paristech.fr/MS_BGD/KitBigData/Projet_kitbigdata/data_base/RAW_recipes.csv'
     # path_grille = '/Users/fabreindira/Library/CloudStorage/OneDrive-telecom-paristech.fr/MS_BGD/KitBigData/Webapp_git/PositioningStrategy_webapp/src/nutrient_table.csv'
-    path = Path('/Users/phuongnguyen/Documents/cours_BGD_Telecom_Paris_2024/Kit_Big_Data/dataset/RAW_recipes.csv')
-    path_grille = Path('/Users/phuongnguyen/Documents/cours_BGD_Telecom_Paris_2024/Kit_Big_Data/scripts/nutrient_table (1).csv')
+    path = Path('/Users/fabreindira/Library/CloudStorage/OneDrive-telecom-paristech.fr/MS_BGD/KitBigData/Projet_kitbigdata/data_base/RAW_recipes.csv')
+    path_grille = Path('/Users/fabreindira/Library/CloudStorage/OneDrive-telecom-paristech.fr/MS_BGD/KitBigData/Webapp_git/src/nutrient_table.csv')
 
     configs = {
     'nutritioncolname':['calories', 'total_fat_%', 'sugar_%', 'sodium_%', 'protein_%', 'sat_fat_%', 'carbs_%'],
@@ -117,15 +117,18 @@ def main():
     nutrition_table_nutriscore = nutri_score_instance.nutriscore
     print(nutrition_table_nutriscore)
     print(nutri_score_instance.nutriscore_label)
+    print(nutrition_table_nutriscore.describe()) #test for comparison
 
-    # output_path = '/Users/fabreindira/Library/CloudStorage/OneDrive-telecom-paristech.fr/MS_BGD/KitBigData/Projet_kitbigdata/nutrition_table_nutriscore.csv'
-    # nutrition_table_nutriscore.to_csv(output_path, index=False, header=True, sep=',')
+    output_path = '/Users/fabreindira/Library/CloudStorage/OneDrive-telecom-paristech.fr/MS_BGD/KitBigData/Webapp_git/src/nutrition_table_nutriscore.csv'
+    nutrition_table_withlabels = nutrition_table_nutriscore.set_scorelabel()
+    nutrition_table_withlabels.to_csv(output_path, index=False, header=True, sep=',')
 
     # Plotting
-    plot(nutrition_table_nutriscore['nutriscore'], title='Nutriscore distribution', xlabel='Nutriscore', ylabel='Number of recipes', output_path='nutriscore_distribution.png').plot_distrubution()
-    plot(nutri_score_instance.nutriscore_label['label'], title='Nutriscore label distribution', xlabel='Nutriscore label', ylabel='Number of recipes', output_path='nutriscore_label_distribution.png').plot_distribution_label(labels=['A', 'B', 'C', 'D', 'E'])
+    #plot(nutrition_table_nutriscore['nutriscore'], title='Nutriscore distribution', xlabel='Nutriscore', ylabel='Number of recipes', output_path='nutriscore_distribution.png').plot_distrubution()
+    #plot(nutri_score_instance.nutriscore_label.nutriscore_label['label'], title='Nutriscore label distribution', xlabel='Nutriscore label', ylabel='Number of recipes', output_path='nutriscore_label_distribution.png').plot_distribution_label(labels=['A', 'B', 'C', 'D', 'E'])
     
     return nutrition_table_nutriscore
 
 if __name__ == '__main__':
     main()
+
