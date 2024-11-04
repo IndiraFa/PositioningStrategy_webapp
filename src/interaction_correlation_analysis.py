@@ -155,7 +155,12 @@ def main():
     print(analysis.label_analysis_result)
     analysis.heatmap(analysis.matrix)
 
-    return
+    return (
+        analysis.result,
+        analysis.merged_data,
+        analysis.label_analysis_result,
+        analysis.matrix
+    )
 
 
 if __name__ == '__main__':
