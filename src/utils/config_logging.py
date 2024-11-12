@@ -3,14 +3,20 @@ import os
 from datetime import datetime
 from logging.handlers import TimedRotatingFileHandler
 
-def configure_logging(level="INFO"):
-    """_summary_
+def configure_logging(level=logging.INFO):
+    """
+    Configures a logging system for the application with file rotation.
+
+    Creates a `logs` directory if it doesn't exist and sets up two handlers:
+    - A file handler with daily rotation at midnight, keeping logs for 7 days.
+    - A console handler to display logs in real-time.
 
     Args:
-        level (str, optional): _description_. Defaults to "INFO".
+        level (int, optional): Minimum logging level for recording (e.g., `logging.INFO` or `logging.DEBUG`). 
+                               Defaults to `logging.INFO`.
 
     Returns:
-        _type_: _description_
+        logging.Logger: Configured logger instance for the application.
     """
     if not os.path.exists("logs"):
         os.makedirs("logs")
