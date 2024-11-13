@@ -14,6 +14,14 @@ nutriscore_data = pd.read_csv(path2, sep=',')
 
 def interactions_df(data):
     """
+    Compute the number of interactions, reviews, ratings and average rating
+    for each recipe.
+
+    Parameters:
+    - data: DataFrame, the interaction data.
+
+    Returns:
+    - result: DataFrame, the result of the computation.
     """
     data_filtered = data.dropna(subset=['rating', 'review'])
     interaction_count = (
@@ -83,6 +91,14 @@ def interactions_and_nutriscore_df(interaction_data, nutriscore_data):
 
 def label_analysis(data):
     """
+    Compute the average rating, the number of interactions, the number of
+    recipes and the interaction/recipe ratio for each label.
+
+    Parameters:
+    - data: DataFrame, the merged data.
+
+    Returns:
+    - merged_counts: DataFrame, the result of the computation
     """
     averate_rating_per_label = (
         data
