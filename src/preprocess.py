@@ -22,6 +22,7 @@ configs = {
         'dv_calories': 2000
 }
 
+
 class Datatools:
     @staticmethod
     def get_value_from_string(string):
@@ -34,6 +35,7 @@ class Datatools:
             # Print an error message if extraction fails
             print(f"Error while extracting numbers from string: {e}")
             return []
+
 
 class Preprocessing:
     def __init__(self, path, configs):
@@ -216,7 +218,7 @@ class Preprocessing:
             
             initial_outliers_count = len(self.outliers)
             print(f"Number of rows in the outliers DataFrame before processing: "
-                  f"{initial_outliers_count}") #test unitaire
+                  f"{initial_outliers_count}")  # test unitaire
 
             # Apply Gaussian normalization to each column
             for col in gauss_configs['colname']:
@@ -236,10 +238,10 @@ class Preprocessing:
 
             print(
                 f"Size of DF_noOutliers before processing: "
-                f"{len(DF_noOutliers)}") #test unitaire
+                f"{len(DF_noOutliers)}")  # test unitaire
             print(
                 f"Size of Total_outliers before processing: "
-                f"{len(DF_outliers)}") #test unitaire
+                f"{len(DF_outliers)}")  # test unitaire
             print("\n")
 
             # Identify and remove outliers (values >= 3) for each column
@@ -259,7 +261,7 @@ class Preprocessing:
             print("\n")
             print(
                 f"Size of DF_noOutliers after processing: "
-                f"{len(DF_noOutliers)}") #test unitaire
+                f"{len(DF_noOutliers)}")  # test unitaire
             print(f"Size of DF_outliers after processing: {len(DF_outliers)}")
             print("\n")
 
@@ -273,7 +275,7 @@ class Preprocessing:
             print(f"Unexpected error: {e}")
             return pd.DataFrame()
 
-   # denormalisation of the data from the gaussian_normalisation     
+    # denormalisation of the data from the gaussian_normalisation     
     def Denormalisation(self, DF_noOutliers, DF_outliers): 
         try:
             # Denormalize the Gaussian normalized data
@@ -283,8 +285,7 @@ class Preprocessing:
             # Combine the columns from grillecolname with 
             # dv_total_fat_% and dv_carbs_%
             columns_to_denormalize = (
-                self.configs['grillecolname'] \
-                + ['dv_total_fat_%', 'dv_carbs_%']
+                self.configs['grillecolname'] + ['dv_total_fat_%', 'dv_carbs_%']
             )
             
             for col in columns_to_denormalize:
@@ -303,6 +304,7 @@ class Preprocessing:
             print(f"Unexpected error: {e}")
             return pd.DataFrame()
 
+
 def main():
     path = './datasets/RAW_recipes.csv'
 
@@ -315,6 +317,7 @@ def main():
     print(nutrition_table.head())
     print(nutrition_table_normal.head())
     return nutrition_table, nutrition_table_normal
+
 
 if __name__ == '__main__':
     main()
