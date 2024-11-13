@@ -163,3 +163,11 @@ cython_debug/
 
 # datasets
 src/datasets/
+
+.DS_Store
+NS_label_no_outliers.png
+NS_label_with_outliers.png
+NS_no_outliers.png
+NS_with_outliers.png
+
+get_dataset_withlabels.py
