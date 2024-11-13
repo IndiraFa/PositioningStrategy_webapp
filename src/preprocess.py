@@ -24,6 +24,20 @@ configs = {
 
 
 class Datatools:
+    """
+    This class contains a static method that extracts numerical values 
+    from a string.
+
+    Attributes:
+    ----------
+    None
+
+    Methods:
+    --------
+    get_value_from_string(string):
+        Extracts numerical values from a string using regular expressions.
+    
+    """
     @staticmethod
     def get_value_from_string(string):
         try:
@@ -38,6 +52,52 @@ class Datatools:
 
 
 class Preprocessing:
+    """
+    This class performs data preprocessing steps on a given dataset.
+
+    Attributes:
+    ----------
+    path : str
+        The path to the dataset file
+    configs : dict
+        A dictionary containing configuration parameters for the 
+        preprocessing steps
+    rawdata : pd.DataFrame
+        A DataFrame containing the raw data from the dataset
+    formatdata : pd.DataFrame
+        A DataFrame containing the formatted nutrition data
+    normaldata : pd.DataFrame
+        A DataFrame containing the normalized nutrition data
+    prefiltredata : pd.DataFrame
+        A DataFrame containing the pre-filtered nutrition data without 
+        visible outliers
+    gaussiandata : pd.DataFrame
+        A DataFrame containing the Gaussian-normalized nutrition data
+    outliers : pd.DataFrame
+        A DataFrame containing the outliers removed during preprocessing
+
+    Methods:
+
+    get_raw_nutrition():
+        Extracts the 'id' and 'nutrition' columns from the raw data.
+
+    get_formatted_nutrition():
+        Formats the nutrition data by extracting numerical values from the 
+        'nutrition' column.
+
+    set_dv_normalisation():
+        Normalizes the nutrition data based on daily values (DV).
+
+    prefiltrage():
+        Pre-filters the data to remove extreme outliers.
+
+    gaussian_normalisation():
+        Applies Gaussian normalization to the pre-filtered data.
+
+    Denormalisation():
+        Denormalizes the Gaussian-normalized data.
+
+    """
     def __init__(self, path, configs):
         try:
             # Load raw data from the specified CSV file
@@ -58,6 +118,18 @@ class Preprocessing:
         self.Denormalisation(self.gaussiandata, self.outliers)
 
     def get_raw_nutrition(self):
+        """
+        Extracts the 'id' and 'nutrition' columns from the raw data.
+
+        Parameters:
+        -----------
+        None
+
+        Returns:
+        --------
+        pd.DataFrame
+            A DataFrame containing the 'id' and 'nutrition' columns
+        """
         try:
             # Extract 'id' and 'nutrition' columns from raw data
             return self.rawdata[['id', 'nutrition']]
@@ -67,6 +139,19 @@ class Preprocessing:
             return pd.DataFrame()
 
     def get_formatted_nutrition(self):
+        """
+        Formats the nutrition data by extracting numerical values from the
+        'nutrition' column.
+
+        Parameters:
+        -----------
+        None
+
+        Returns:
+        --------
+        pd.DataFrame
+            A DataFrame containing the formatted nutrition data
+        """
         try:
             # Format the nutrition data by extracting numerical values
             data = self.get_raw_nutrition()
@@ -91,6 +176,14 @@ class Preprocessing:
             return pd.DataFrame()
 
     def set_dv_normalisation(self):
+        """
+        Normalizes the nutrition data based on daily values (DV).
+
+        Returns:
+        --------
+        pd.DataFrame
+            A DataFrame containing the normalized nutrition data
+        """
         try:
             # Normalize the nutrition data based on daily values (DV)
             dv_calories = self.configs['dv_calories']
@@ -118,6 +211,15 @@ class Preprocessing:
             return pd.DataFrame()
 
     def prefiltrage(self):
+        """
+        Suppress the outliers from the data
+        Returns:
+        --------
+        pd.DataFrame
+            A DataFrame containing the pre-filtered nutrition data without
+            visible outliers
+        
+        """
         try:
             # Pre-filter the data to remove extreme outliers
             initial_count = len(self.normaldata)
@@ -204,6 +306,17 @@ class Preprocessing:
             return pd.DataFrame()
 
     def gaussian_normalisation(self):
+        """
+        Apply Gaussian normalization to the pre-filtered data.
+
+        Returns:
+        --------
+
+        pd.DataFrame
+            A DataFrame containing the Gaussian-normalized nutrition data
+        pd.DataFrame
+            A DataFrame containing the outliers removed during preprocessing
+        """
         gauss_configs = {'colname': [
             'dv_calories_%',
             'dv_total_fat_%',
@@ -277,6 +390,24 @@ class Preprocessing:
 
     # denormalisation of the data from the gaussian_normalisation     
     def Denormalisation(self, DF_noOutliers, DF_outliers): 
+        """
+        Denormalizes the Gaussian-normalized data to get 2 separate dataframes:
+
+        Parameters:
+        -----------
+        DF_noOutliers : pd.DataFrame
+            A DataFrame containing the Gaussian-normalized data without outliers
+
+        DF_outliers : pd.DataFrame
+            A DataFrame containing the outliers removed during preprocessing
+
+        Returns:
+        --------
+        pd.DataFrame
+            A DataFrame containing the denormalized data without outliers
+        pd.DataFrame
+            A DataFrame containing the denormalized outliers
+        """
         try:
             # Denormalize the Gaussian normalized data
             finalDF_noOutliers = DF_noOutliers.copy()
