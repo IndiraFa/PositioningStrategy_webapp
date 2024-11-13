@@ -8,6 +8,29 @@ from preprocess import Preprocessing, Datatools
 
 
 class NutriScore:
+    """
+    This class is used to calculate the nutriscore of a dataset
+    based on the nutriscore grid provided in the file grille.
+    The nutriscore is calculated based on the following nutrients:
+    - calories
+    - sugar_%
+    - sodium_%
+    - protein_%
+    - sat_fat_%
+    with a reference daily value of 2000 calories.
+
+    attributes:
+    - data: the dataset to calculate the nutriscore
+    - grille: the nutriscore grid
+    - configs: the configuration of the nutriscore calculation
+    - nutriscore: the calculated nutriscore
+    - nutriscore_label: the nutriscore label
+  
+    methods:
+    - calcul_nutriscore: calculate the nutriscore based on the grid
+    - set_scorelabel: set the nutriscore label (A to E)based on the 
+    nutriscore value
+    """
     def __init__(self, data, grille, configs):
         self.data = data
         self.grille = pd.read_csv(grille, sep=',')
@@ -16,6 +39,18 @@ class NutriScore:
         self.nutriscore_label = self.set_scorelabel()
 
     def calcul_nutriscore(self):
+        """
+        calculate the nutriscore based on the grid
+
+        parameters:
+        - data: the dataset to calculate the nutriscore
+        - grille: the nutriscore grid
+        - configs: the configuration of the nutriscore calculation
+
+        return:
+        - data: the dataset with the nutriscore column
+
+        """
         data = self.data.copy()
         data['nutriscore'] = 14.0
 
@@ -61,6 +96,16 @@ class NutriScore:
         return data
 
     def set_scorelabel(self):
+        """
+        calculate the nutriscore label (A to E) based on the nutriscore value
+
+        Parameters:
+        - data: the dataset with the nutriscore column
+
+        Returns:
+        - data: the dataset with the nutriscore label column
+
+        """
         score = self.nutriscore
         score['label'] = ''
         if 'nutriscore' not in score.columns:
@@ -93,6 +138,20 @@ class NutriScore:
 
 
 class plot:
+    """
+    This class is used to plot the distribution of a dataset
+
+    attributes:
+    - data: the dataset to plot
+    - title: the title of the plot
+    - xlabel: the label of the x axis
+    - ylabel: the label of the y axis
+    - output_path: the path to save the plot
+
+    methods:
+    - plot_distribution: plot the distribution of the dataset
+    - plot_distribution_label: plot the distribution of the dataset with labels
+    """
     def __init__(
             self,
             data,
