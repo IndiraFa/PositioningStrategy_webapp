@@ -1,11 +1,10 @@
-import logging
-import requests
-import zipfile
 import os
 import io
+import logging
+import requests
 from dotenv import load_dotenv
 
-# load environment variables from config.env
+# Charger les variables d'environnement depuis config.env
 load_dotenv()
 
 logger = logging.getLogger("app.utils.data_loader")
@@ -20,43 +19,35 @@ def validate_url(url):
         return False
     return True
 
-def extract_files(archive, output_dir):
-    """Extract files in the 'recipe' folder from the archive into the specified output directory."""
-    try:
-        # Create the output directory if it does not exist
-        os.makedirs(output_dir, exist_ok=True)
-        
-        with zipfile.ZipFile(archive) as z:
-            recipe_files = [f for f in z.namelist() if f.startswith("recipe/")]
-            if recipe_files:
-                for file in recipe_files:
-                    z.extract(file, output_dir)
-                
-                # Validate extracted files
-                extracted_paths = [os.path.join(output_dir, file) for file in recipe_files]
-                missing_files = [file for file in extracted_paths if not os.path.exists(file)]
-                
-                if missing_files:
-                    logger.warning(f"Some files were not extracted correctly: {missing_files}")
-                else:
-                    logger.info(f"{len(recipe_files)} files extracted in '{output_dir}/recipe'.")
-            else:
-                logger.warning("No files found in the ‘recipe’ folder in the archive.")
-    except zipfile.BadZipFile as ex:
-        logger.error(f"Failed to extract files: Invalid ZIP archive. {ex}")
-    except Exception as ex:
-        logger.error(f"An error occurred during extraction: {ex}")
+def download_data(url, output_dir="src/datasets"):
+    """
+    Download data from the specified URL and save it to the output directory.
 
+    Args:
+        url (str): The URL to download the file from.
+        output_dir (str): The directory where the downloaded file will be saved.
 
-def download_data(url):
-    """Download data from the specified URL."""
+    Returns:
+        str: The path to the downloaded file if successful, None otherwise.
+    """
     try:
-        logger.info("Downloading dataset...")
+        logger.info(f"Downloading dataset from {url}...")
         response = requests.get(url)
         
         if response.status_code == 200:
-            logger.info("Download completed successfully.")
-            return io.BytesIO(response.content)
+            # Extract filename from URL and create full path
+            filename = os.path.basename(url)
+            file_path = os.path.join(output_dir, filename)
+
+            # Create output directory if it doesn't exist
+            os.makedirs(output_dir, exist_ok=True)
+
+            # Save the file content to the specified path
+            with open(file_path, "wb") as file:
+                file.write(response.content)
+            
+            logger.info(f"Download completed successfully. File saved as {file_path}")
+            return file_path
         else:
             logger.error(f"Error while downloading, status: {response.status_code}")
             return None
@@ -66,22 +57,27 @@ def download_data(url):
 
 def load_data():
     """
-    Loads and extracts data from a specified URL in the environment variables.
-    Downloads a ZIP file from the DRIVE_LINK and extracts files in the 'recipe' folder into OUTPUT_DIR.
+    Loads data from multiple URLs specified in environment variables and saves them to the output directory.
+    
+    Expects environment variables:
+        - DRIVE_LINKS (str): A comma-separated list of URLs to download.
+        - OUTPUT_DIR (str): The directory where downloaded files will be saved, defaulting to "src/datasets".
     """
     # Load environment variables
-    url = os.getenv("DRIVE_LINK")
+    urls = os.getenv("DRIVE_LINKS")
     output_dir = os.getenv("OUTPUT_DIR", "src/datasets")
 
-    # Validate the URL
-    if not validate_url(url):
+    if not urls:
+        logger.error("No download links provided in the environment variables.")
         return
 
-    # Download data
-    archive = download_data(url)
-    if archive is None:
-        logger.error("Data download failed.")
-        return
+    # Split URLs if multiple links are provided
+    urls = [url.strip() for url in urls.split(",")]
 
-    # Extract files
-    extract_files(archive, output_dir)
+    for url in urls:
+        # Validate each URL
+        if not validate_url(url):
+            continue
+
+        # Download each file
+        download_data(url, output_dir)
