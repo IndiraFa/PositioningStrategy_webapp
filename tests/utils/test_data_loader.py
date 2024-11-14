@@ -1,7 +1,8 @@
 import unittest
 import io
+import os
 from unittest.mock import mock_open, patch, MagicMock
-from src.utils.data_loader import validate_url, download_data, extract_files
+from utils.data_loader import validate_url, download_data, extract_files
 
 class TestDataLoader(unittest.TestCase):
     @patch("data_loader.logger")
@@ -30,7 +31,7 @@ class TestDataLoader(unittest.TestCase):
 
 
         # simulate a failed response
-        mock_respose.status_code = 404
+        mock_response.status_code = 404
         mock_get.return_value = mock_response
 
         archive = download_data("https://example.com")
