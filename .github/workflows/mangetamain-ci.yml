@@ -5,6 +5,7 @@ on:
         branches:
             - telecom-paris/dev-stable
             - telecom-paris/main
+            - telecom-paris/dev
 
 jobs:
   lint:
