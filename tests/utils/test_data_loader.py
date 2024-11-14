@@ -2,9 +2,14 @@ import unittest
 import io
 import os
 from unittest.mock import mock_open, patch, MagicMock
-from utils.data_loader import validate_url, download_data, extract_files
+from utils.data_loader import validate_url, download_data
 
 class TestDataLoader(unittest.TestCase):
+    """_summary_
+
+    Args:
+        unittest (_type_): _description_
+    """
     @patch("data_loader.logger")
     def test_validate_url(self, mock_logger):
         # Test with a valid URL
@@ -18,6 +23,8 @@ class TestDataLoader(unittest.TestCase):
         self.assertFalse(validate_url("invalid_url"))
         mock_logger.error.assert_called_with("The download link is not a valid URL.")
 
+    @patch("data_loader.requests.get")
+    @patch("data_loader.logger")
     def test_download_data(self, mock_logger, mock_get):
         # simulate a successful response
         mock_response = MagicMock()
