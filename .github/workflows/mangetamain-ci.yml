@@ -38,7 +38,7 @@ jobs:
 
     - name: Run flake8 for PEP8 compliance
       run: |
-        pip install flake8
+        pip install flake8, pydocstyle
         flake8 . --count --select=E,W --max-line-length=79 --max-complexity=10 --statistics --exit-zero
 
 
