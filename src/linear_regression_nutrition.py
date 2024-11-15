@@ -10,8 +10,8 @@ from preprocess import Preprocessing
 from preprocess import configs
 
 
-path_recipes_data = './datasets/RAW_recipes.csv'
-path_nutriscore_data = './datasets/nutrition_table_nutriscore_no_outliers.csv'
+path_recipes_data = 'src/datasets/RAW_recipes.csv'
+path_nutriscore_data = 'src/datasets/nutrition_table_nutriscore_no_outliers.csv'
 
 recipes_data = Preprocessing(path_recipes_data, configs)
 raw_data = recipes_data.get_formatted_nutrition()

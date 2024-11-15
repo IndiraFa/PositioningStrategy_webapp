@@ -1,9 +1,9 @@
-.. Mangetamain_webapp documentation master file, created by
-   sphinx-quickstart on Thu Oct 10 11:36:39 2024.
+.. Mangetamain Webapp documentation master file, created by
+   sphinx-quickstart on Thu Nov 14 18:45:25 2024.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Mangetamain_webapp documentation
+Mangetamain Webapp documentation
 ================================
 
 Add your content using ``reStructuredText`` syntax. See the
@@ -12,6 +12,9 @@ documentation for details.
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 5
    :caption: Contents:
+
+   utils/modules
+   pages/modules
 
