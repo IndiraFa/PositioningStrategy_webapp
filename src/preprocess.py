@@ -437,7 +437,7 @@ class Preprocessing:
 
 
 def main():
-    path = './datasets/RAW_recipes.csv'
+    path = 'src/datasets/RAW_recipes.csv'
 
     # Create an instance of the Preprocessing class
     preprocessing_instance = Preprocessing(path, configs)
