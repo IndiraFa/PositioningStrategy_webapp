@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import sqlite3
 from nutriscore_analysis import (
     nutriscore_analysis,
     shapiro_test,
@@ -10,6 +11,7 @@ from nutriscore_analysis import (
     kurtosis
 )
 from utils.config_logging import configure_logging
+from utils.data_loader import download_data
 
 # Initialize logging
 logger = configure_logging()
