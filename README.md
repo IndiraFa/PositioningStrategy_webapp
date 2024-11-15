@@ -27,6 +27,9 @@ python -m pip install -r requirements.txt
 ```
 
 # Run Program
+```python
+streamlit run src/app.py
+```
 
 
 

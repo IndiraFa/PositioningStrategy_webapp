@@ -184,8 +184,8 @@ class plot:
 
 
 def main():
-    path = Path('./datasets/RAW_recipes.csv')
-    path_grille = Path('./nutrient_table.csv')
+    path = Path('src/datasets/RAW_recipes.csv')
+    path_grille = Path('src/nutrient_table.csv')
 
     configs = {
         'nutritioncolname': [

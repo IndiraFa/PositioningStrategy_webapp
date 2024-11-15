@@ -5,10 +5,10 @@ import seaborn as sns
 # from pathlib import Path
 from functools import reduce
 
-path = './datasets/RAW_interactions.csv'
+path = 'src/datasets/RAW_interactions.csv'
 interaction_data = pd.read_csv(path, sep=',')
 
-path2 = './datasets/nutrition_table_nutriscore_no_outliers.csv'
+path2 = 'src/datasets/nutrition_table_nutriscore_no_outliers.csv'
 nutriscore_data = pd.read_csv(path2, sep=',')
 
 

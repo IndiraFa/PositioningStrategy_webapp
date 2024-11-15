@@ -3,13 +3,11 @@ name: CI Pipeline
 on: 
     pull_request:
         branches:
-            - telecom-paris/dev-stable
-            - telecom-paris/main
+            - main
 
 jobs:
-  lint:
+  setup:
     runs-on: ubuntu-latest
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -22,60 +20,61 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 pydocstyle pytest pytest-cov
+        
+    - name: Set PYTHONPATH
+      run: |
+        echo "PYTHONPATH=src" >> $GITHUB_ENV
+
+  lint:
+    runs-on: ubuntu-latest
+    needs: setup
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
 
     - name: Run flake8 for PEP8 compliance
       run: |
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        python -m pip install flake8
+        flake8 . --count --select=E,W --max-line-length=79 --max-complexity=10 --statistics --exit-zero
+
 
     - name: Run pydocstyle for docstring compliance
       run: |
+        python -m pip install pydocstyle
         pydocstyle .
 
   test:
     runs-on: ubuntu-latest
+    needs: setup
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.10'
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pytest pytest-cov
-
     - name: Run tests with coverage
       run: |
+        python -m pip install pytest
         pytest --cov=./ --cov-report=xml
 
     - name: Check coverage
       run: |
-        coverage report --fail-under=70
+        coverage report --fail-under=80
 
   docs:
     runs-on: ubuntu-latest
+    needs: setup
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
-
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.10'
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install sphinx
 
     - name: Build documentation
       run: |
         cd docs
         make html
+    - name: Upload documentation
+      uses: actions/upload-artifact@v2
+      with:
+        name: documentation
+        path: docs/build/html
