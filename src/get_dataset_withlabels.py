@@ -7,7 +7,7 @@ from calcul_nutriscore import NutriScore
 from preprocess import Preprocessing
     
 def calcul_nutriscore_with_outliers(data, grille, configs):
-     # Créer une instance de la classe Preprocessing
+    # Créer une instance de la classe Preprocessing
     preprocessor = Preprocessing(data, configs)
     processed_data = preprocessor.normaldata
     
@@ -24,8 +24,8 @@ def calcul_nutriscore_with_outliers(data, grille, configs):
 
     return nutriscore_with_outliers
 
-path = Path('/Users/fabreindira/Library/CloudStorage/OneDrive-telecom-paristech.fr/MS_BGD/KitBigData/Projet_kitbigdata/data_base/RAW_recipes.csv')
-path_grille = Path('/Users/fabreindira/Library/CloudStorage/OneDrive-telecom-paristech.fr/MS_BGD/KitBigData/Webapp_git/src/nutrient_table.csv')
+path = Path('src/datasets/RAW_recipes.csv')
+path_grille = Path('src/nutrient_table.csv')
 
 configs = {
     'nutritioncolname':['calories', 'total_fat_%', 'sugar_%', 'sodium_%', 'protein_%', 'sat_fat_%', 'carbs_%'],
@@ -39,6 +39,6 @@ print(df_nutriscore_with_outliers.shape)
 df_nutriscore_with_outliers.info()
 print(df_nutriscore_with_outliers.describe())
 
-output_path = '/Users/fabreindira/Library/CloudStorage/OneDrive-telecom-paristech.fr/MS_BGD/KitBigData/Webapp_git/src/nutrition_table_nutriscore_with_outliers.csv'
+output_path = 'src/nutrition_table_nutriscore_with_outliers.csv'
 df_nutriscore_with_outliers.to_csv(output_path, index=False, header=True, sep=',')
 
