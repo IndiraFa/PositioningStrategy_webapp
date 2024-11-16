@@ -76,3 +76,6 @@ typing_extensions==4.12.2
 tzdata==2024.2
 urllib3==2.2.3
 watchdog==5.0.3
+#FilesConnection and gcsfs for Cloud storage
+gcsfs==2024.10.0
+st-files-connection
