@@ -70,6 +70,9 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+_build/
+_static/
+_templates/
 
 # PyBuilder
 .pybuilder/
@@ -154,9 +157,23 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+#secrets file for Cloud
+.toml
+
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+
+# datasets
+src/datasets/
+
+.DS_Store
+NS_label_no_outliers.png
+NS_label_with_outliers.png
+NS_no_outliers.png
+NS_with_outliers.png
+
+get_dataset_withlabels.py
