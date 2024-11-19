@@ -1,35 +1,51 @@
 import os
+import sys
 import streamlit as st
 import pandas as pd
-#from sqlalchemy import create_engine
 import psycopg2
+
+# current_dir = os.path.dirname(os.path.abspath(__file__))
+# parent_dir = os.path.abspath(os.path.join(current_dir, os.pardir, os.pardir))
+# sys.path.append(parent_dir)
+
+# from utils.config_logging import configure_logging
+
+# logger = configure_logging()
 
 st.set_page_config(layout="centered")
 
-db_host = st.secrets["connections"]["postgresql"]["host"]
-db_port = st.secrets["connections"]["postgresql"]["port"]
-db_user = st.secrets["connections"]["postgresql"]["username"]
-db_password = st.secrets["connections"]["postgresql"]["password"]
-db_name = st.secrets["connections"]["postgresql"]["database"]
+# logger.info("Starting the 6_Appendix.py script")
 
-# db_url = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+try:
+    db_host = st.secrets["connections"]["postgresql"]["host"]
+    db_port = st.secrets["connections"]["postgresql"]["port"]
+    db_user = st.secrets["connections"]["postgresql"]["username"]
+    db_password = st.secrets["connections"]["postgresql"]["password"]
+    db_name = st.secrets["connections"]["postgresql"]["database"]
 
-# engine = create_engine(db_url)
+    # logger.info("Connecting to the database ...")
 
-# with engine.connect() as connection:
-#     query = "SELECT * FROM nutrition_withOutliers;"
-#     df2 = pd.read_sql(query, connection)
+    conn = psycopg2.connect(
+        host=db_host,
+        port=db_port,
+        user=db_user,
+        password=db_password,
+        dbname=db_name
+    )
 
-conn = psycopg2.connect(
-    host=db_host,
-    port=db_port,
-    user=db_user,
-    password=db_password,
-    dbname=db_name
-)
+    # logger.info("Successfully connected to the database")
 
-query = 'SELECT * FROM "NS_withOutliers";'
-df2 = pd.read_sql_query(query, conn)
+    query = 'SELECT * FROM "NS_withOutliers";'
+    df2 = pd.read_sql_query(query, conn)
+
+    # logger.info("Successfully read the data from the database")
+
+    conn.close()
+    # logger.info("Connection to the database closed")
+
+except Exception as e:
+    # logger.error(f"An error occurred: {e}")
+    st.error("An error occurred while connecting to the database")
 
 # Titre de la page
 st.markdown("<h1 style='color:purple;'>Appendix</h1>", unsafe_allow_html=True)
@@ -98,11 +114,6 @@ st.write(
     """
 )
 
-# Afficher une ligne spécifique du DataFrame en utilisant l'ID
-# csv_file_path2 = os.path.join(
-#     current_dir, "../datasets/", "nutrition_table_nutriscore_with_outliers.csv"
-# )
-# df2 = pd.read_csv(csv_file_path2)
 recipe_id = 137434  
 specific_row = df2.loc[df2["id"] == recipe_id]
 st.dataframe(specific_row)
@@ -126,5 +137,3 @@ https://eur-lex.europa.eu/legal-content/FR/TXT/PDF/?uri=CELEX:02011R1169-2018010
 """,
     unsafe_allow_html=True,
 )
-
-conn.close()
