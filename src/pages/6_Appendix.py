@@ -1,8 +1,35 @@
 import os
 import streamlit as st
 import pandas as pd
+#from sqlalchemy import create_engine
+import psycopg2
 
 st.set_page_config(layout="centered")
+
+db_host = st.secrets["connections"]["postgresql"]["host"]
+db_port = st.secrets["connections"]["postgresql"]["port"]
+db_user = st.secrets["connections"]["postgresql"]["username"]
+db_password = st.secrets["connections"]["postgresql"]["password"]
+db_name = st.secrets["connections"]["postgresql"]["database"]
+
+# db_url = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+
+# engine = create_engine(db_url)
+
+# with engine.connect() as connection:
+#     query = "SELECT * FROM nutrition_withOutliers;"
+#     df2 = pd.read_sql(query, connection)
+
+conn = psycopg2.connect(
+    host=db_host,
+    port=db_port,
+    user=db_user,
+    password=db_password,
+    dbname=db_name
+)
+
+query = 'SELECT * FROM "NS_withOutliers";'
+df2 = pd.read_sql_query(query, conn)
 
 # Titre de la page
 st.markdown("<h1 style='color:purple;'>Appendix</h1>", unsafe_allow_html=True)
@@ -72,10 +99,10 @@ st.write(
 )
 
 # Afficher une ligne spécifique du DataFrame en utilisant l'ID
-csv_file_path2 = os.path.join(
-    current_dir, "../datasets/", "nutrition_table_nutriscore_with_outliers.csv"
-)
-df2 = pd.read_csv(csv_file_path2)
+# csv_file_path2 = os.path.join(
+#     current_dir, "../datasets/", "nutrition_table_nutriscore_with_outliers.csv"
+# )
+# df2 = pd.read_csv(csv_file_path2)
 recipe_id = 137434  
 specific_row = df2.loc[df2["id"] == recipe_id]
 st.dataframe(specific_row)
@@ -99,3 +126,5 @@ https://eur-lex.europa.eu/legal-content/FR/TXT/PDF/?uri=CELEX:02011R1169-2018010
 """,
     unsafe_allow_html=True,
 )
+
+conn.close()
