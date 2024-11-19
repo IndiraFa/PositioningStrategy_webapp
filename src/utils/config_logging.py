@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from logging.handlers import TimedRotatingFileHandler
 
+
 def configure_logging(level=logging.INFO):
     """
     Configures a logging system for the application with file rotation.
@@ -12,7 +13,8 @@ def configure_logging(level=logging.INFO):
     - A console handler to display logs in real-time.
 
     Args:
-        level (int, optional): Minimum logging level for recording (e.g., `logging.INFO` or `logging.DEBUG`). 
+        level (int, optional): Minimum logging level for recording
+        (e.g., `logging.INFO` or `logging.DEBUG`).
                                Defaults to `logging.INFO`.
 
     Returns:
@@ -21,14 +23,17 @@ def configure_logging(level=logging.INFO):
     if not os.path.exists("logs"):
         os.makedirs("logs")
 
-    
     # Configure the file rotation manager
-    log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s - %(filename)s"
-    log_filename = f"logs/mangetamainapp_{datetime.now().strftime('%Y-%m-%d')}.log"
+    log_format = """
+        %(asctime)s - %(name)s - %(levelname)s - %(message)s - %(filename)s
+    """
+    log_filename = f"""
+        logs/mangetamainapp_{datetime.now().strftime('%Y-%m-%d')}.log
+    """
     file_handler = TimedRotatingFileHandler(
-        log_filename, 
-        when="midnight", 
-        interval=1, 
+        log_filename,
+        when="midnight",
+        interval=1,
         backupCount=7
     )
 
@@ -43,6 +48,5 @@ def configure_logging(level=logging.INFO):
     logger.setLevel(level)
     logger.addHandler(file_handler)
     logger.addHandler(console_handler)
-    
     logger.info("Logging configuration set")
     return logger

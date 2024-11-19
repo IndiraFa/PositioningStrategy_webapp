@@ -10,8 +10,8 @@ from scipy.stats import anderson
 from calcul_nutriscore import plot
 # from preprocess import Preprocessing
 
-path_with_outliers = 'src/datasets/nutrition_table_nutriscore_with_outliers.csv'
-data_with_outliers = pd.read_csv(path_with_outliers, sep=',')
+#path_with_outliers = 'src/datasets/nutrition_table_nutriscore_with_outliers.csv'
+#data_with_outliers = pd.read_csv(path_with_outliers, sep=',')
 
 path_no_outliers = 'src/datasets/nutrition_table_nutriscore_no_outliers.csv'
 data_no_outliers = pd.read_csv(path_no_outliers, sep=',')
