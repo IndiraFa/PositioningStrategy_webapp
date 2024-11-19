@@ -157,8 +157,8 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-#secrets file for Cloud
-.toml
+#secrets file for remote database
+*.toml
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
