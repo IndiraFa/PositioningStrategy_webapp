@@ -1,14 +1,11 @@
 import pandas as pd
-# import numpy as np
-import matplotlib.pyplot as plt
 import seaborn as sns
-# from pathlib import Path
 from functools import reduce
 
-#path = 'src/datasets/RAW_interactions.csv'
-#interaction_data = pd.read_csv(path, sep=',')
+path = './datasets/RAW_interactions.csv'
+interaction_data = pd.read_csv(path, sep=',')
 
-#path2 = 'src/datasets/nutrition_table_nutriscore_no_outliers.csv'
+path2 = './datasets/nutrition_table_nutriscore_no_outliers.csv'
 nutriscore_data = pd.read_csv(path2, sep=',')
 
 
@@ -149,17 +146,17 @@ def main():
 if __name__ == '__main__':
     main()
 
-result = interactions_df(interaction_data)
-merged_data = interactions_and_nutriscore_df(result, nutriscore_data)
+# result = interactions_df(interaction_data)
+# merged_data = interactions_and_nutriscore_df(result, nutriscore_data)
 
-# matrice de correlation pour les colonnes de merged_data
-columns_of_interest = ['interaction_count', 'average_rating', 'nutriscore']
-matrix = merged_data[columns_of_interest].corr()
+# # matrice de correlation pour les colonnes de merged_data
+# columns_of_interest = ['interaction_count', 'average_rating', 'nutriscore']
+# matrix = merged_data[columns_of_interest].corr()
 
-label_analysis_result = label_analysis(merged_data)
+# label_analysis_result = label_analysis(merged_data)
 
-plt.figure(figsize=(12, 8))
-sns.heatmap(matrix, annot=True, cmap='coolwarm', fmt='.2f')
-plt.title('Correlation matrix')
+# plt.figure(figsize=(12, 8))
+# sns.heatmap(matrix, annot=True, cmap='coolwarm', fmt='.2f')
+# plt.title('Correlation matrix')
 
-plt.show()
+# plt.show()
