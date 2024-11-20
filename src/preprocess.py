@@ -1,43 +1,13 @@
+import sys
+import os
 import pandas as pd
 import re
-# from tabulate import tabulate
-
-configs = {
-        'nutritioncolname': [
-            'calories',
-            'total_fat_%',
-            'sugar_%',
-            'sodium_%',
-            'protein_%',
-            'sat_fat_%',
-            'carbs_%'
-        ],
-        'grillecolname': [
-            'dv_calories_%',
-            'dv_sat_fat_%',
-            'dv_sugar_%',
-            'dv_sodium_%',
-            'dv_protein_%'
-        ],
-        'dv_calories': 2000
-}
+from tabulate import tabulate
+import psycopg2
+from sqlalchemy import create_engine
 
 
 class Datatools:
-    """
-    This class contains a static method that extracts numerical values 
-    from a string.
-
-    Attributes:
-    ----------
-    None
-
-    Methods:
-    --------
-    get_value_from_string(string):
-        Extracts numerical values from a string using regular expressions.
-    
-    """
     @staticmethod
     def get_value_from_string(string):
         try:
@@ -50,61 +20,14 @@ class Datatools:
             print(f"Error while extracting numbers from string: {e}")
             return []
 
-
 class Preprocessing:
-    """
-    This class performs data preprocessing steps on a given dataset.
-
-    Attributes:
-    ----------
-    path : str
-        The path to the dataset file
-    configs : dict
-        A dictionary containing configuration parameters for the 
-        preprocessing steps
-    rawdata : pd.DataFrame
-        A DataFrame containing the raw data from the dataset
-    formatdata : pd.DataFrame
-        A DataFrame containing the formatted nutrition data
-    normaldata : pd.DataFrame
-        A DataFrame containing the normalized nutrition data
-    prefiltredata : pd.DataFrame
-        A DataFrame containing the pre-filtered nutrition data without 
-        visible outliers
-    gaussiandata : pd.DataFrame
-        A DataFrame containing the Gaussian-normalized nutrition data
-    outliers : pd.DataFrame
-        A DataFrame containing the outliers removed during preprocessing
-
-    Methods:
-
-    get_raw_nutrition():
-        Extracts the 'id' and 'nutrition' columns from the raw data.
-
-    get_formatted_nutrition():
-        Formats the nutrition data by extracting numerical values from the 
-        'nutrition' column.
-
-    set_dv_normalisation():
-        Normalizes the nutrition data based on daily values (DV).
-
-    prefiltrage():
-        Pre-filters the data to remove extreme outliers.
-
-    gaussian_normalisation():
-        Applies Gaussian normalization to the pre-filtered data.
-
-    Denormalisation():
-        Denormalizes the Gaussian-normalized data.
-
-    """
-    def __init__(self, path, configs):
+    def __init__(self, data, configs):
         try:
-            # Load raw data from the specified CSV file
-            self.rawdata = pd.read_csv(path, sep=',')
-        except FileNotFoundError:
-            # Print an error message if the file is not found
-            print(f"File {path} not found")
+            # Use the provided DataFrame directly
+            self.rawdata = data
+        except Exception as e:
+            # Print an error message if the data is not valid
+            print(f"Error while loading data: {e}")
         self.configs = configs
         # Initialize dictionaries to store mu and sigma values
         self.mu_values = {}
@@ -114,22 +37,9 @@ class Preprocessing:
         self.normaldata = self.set_dv_normalisation()
         self.prefiltredata = self.prefiltrage()
         self.gaussiandata, self.outliers = self.gaussian_normalisation()
-        self.denormalizedata, self.denormalized_outliers = \
-        self.Denormalisation(self.gaussiandata, self.outliers)
+        self.denormalizedata, self.denormalized_outliers = self.Denormalisation(self.gaussiandata, self.outliers)
 
     def get_raw_nutrition(self):
-        """
-        Extracts the 'id' and 'nutrition' columns from the raw data.
-
-        Parameters:
-        -----------
-        None
-
-        Returns:
-        --------
-        pd.DataFrame
-            A DataFrame containing the 'id' and 'nutrition' columns
-        """
         try:
             # Extract 'id' and 'nutrition' columns from raw data
             return self.rawdata[['id', 'nutrition']]
@@ -139,33 +49,16 @@ class Preprocessing:
             return pd.DataFrame()
 
     def get_formatted_nutrition(self):
-        """
-        Formats the nutrition data by extracting numerical values from the
-        'nutrition' column.
-
-        Parameters:
-        -----------
-        None
-
-        Returns:
-        --------
-        pd.DataFrame
-            A DataFrame containing the formatted nutrition data
-        """
         try:
             # Format the nutrition data by extracting numerical values
             data = self.get_raw_nutrition()
-            formatted_data = (
-                data['nutrition']
-                .apply(lambda x: Datatools.get_value_from_string(x))
-            )
-            # Create a df with the formatted data and add the 'id' column
-            table = pd.DataFrame(
-                formatted_data.tolist(),
-                columns=self.configs['nutritioncolname']
-            )
+            formatted_data = data['nutrition'].apply(lambda x: Datatools.get_value_from_string(x))
+            # Create a DataFrame with the formatted data and add the 'id' column
+            table = pd.DataFrame(formatted_data.tolist(), columns=self.configs['nutritioncolname'])
             table['id'] = data['id'].values
+            
             return table
+                    
         except KeyError as e:
             # Print an error message if formatting fails
             print(f"Error while formatting nutrition data: {e}")
@@ -176,14 +69,6 @@ class Preprocessing:
             return pd.DataFrame()
 
     def set_dv_normalisation(self):
-        """
-        Normalizes the nutrition data based on daily values (DV).
-
-        Returns:
-        --------
-        pd.DataFrame
-            A DataFrame containing the normalized nutrition data
-        """
         try:
             # Normalize the nutrition data based on daily values (DV)
             dv_calories = self.configs['dv_calories']
@@ -191,15 +76,13 @@ class Preprocessing:
             table = pd.DataFrame()
             table['id'] = fttable['id']
             # Calculate the percentage of daily values for each nutrient
-            table['dv_calories_%'] = (
-                fttable['calories'] * 100 / dv_calories
-                ).round(2)
+            table['dv_calories_%'] = (fttable['calories'] * 100 / dv_calories).round(3)
             for col in self.configs['nutritioncolname'][1:]:
-                table[f'dv_{col}'] = (
-                    (fttable[col] * dv_calories / fttable['calories'])
-                    .round(2)
-                )
+                table[f'dv_{col}'] = (fttable[col] * dv_calories / fttable['calories']).round(3)
             self.normaldata = table
+
+            #print(tabulate(table.head(30), headers='keys', tablefmt='pretty'))
+
             return table
         except KeyError as e:
             # Print an error message if normalization fails
@@ -211,15 +94,6 @@ class Preprocessing:
             return pd.DataFrame()
 
     def prefiltrage(self):
-        """
-        Suppress the outliers from the data
-        Returns:
-        --------
-        pd.DataFrame
-            A DataFrame containing the pre-filtered nutrition data without
-            visible outliers
-        
-        """
         try:
             # Pre-filter the data to remove extreme outliers
             initial_count = len(self.normaldata)
@@ -227,75 +101,34 @@ class Preprocessing:
 
             table_prefiltre = self.normaldata.copy()
 
-            # Identify outliers for each column based on predefined thresholds
-            outliers_calories = table_prefiltre[
-                table_prefiltre['dv_calories_%'] > 5000
-            ]
-            outliers_total_fat = table_prefiltre[
-                table_prefiltre['dv_total_fat_%'] > 5000
-            ]
-            outliers_sugar = table_prefiltre[
-                table_prefiltre['dv_sugar_%'] > 50000
-            ]
-            outliers_sodium = table_prefiltre[
-                table_prefiltre['dv_sodium_%'] > 5000
-            ]
-            outliers_protein = table_prefiltre[
-                table_prefiltre['dv_protein_%'] > 2000
-            ]
-            outliers_sat_fat = table_prefiltre[
-                table_prefiltre['dv_sat_fat_%'] > 2000
-            ]
-            outliers_carbs = table_prefiltre[
-                table_prefiltre['dv_carbs_%'] > 5000
-            ]
+            # Define thresholds for each column
+            thresholds = {
+                'dv_calories_%': 5000,
+                'dv_total_fat_%': 5000,
+                'dv_sugar_%': 50000,
+                'dv_sodium_%': 5000,
+                'dv_protein_%': 2000,
+                'dv_sat_fat_%': 2000,
+                'dv_carbs_%': 5000
+            }
 
-            # Combine all outliers into a single DataFrame
-            outliers = pd.concat([
-                outliers_calories,
-                outliers_total_fat,
-                outliers_sugar,
-                outliers_sodium,
-                outliers_protein, 
-                outliers_sat_fat,
-                outliers_carbs
-            ]).drop_duplicates()
+            # Identify and combine outliers for each column based on predefined thresholds
+            outliers = pd.concat([table_prefiltre[table_prefiltre[col] > threshold] for col, threshold in thresholds.items()]).drop_duplicates()
 
             # Filter out the visible outliers from different columns
-            table_prefiltre = table_prefiltre[
-                table_prefiltre['dv_calories_%'] <= 5000
-            ]
-            table_prefiltre = table_prefiltre[
-                table_prefiltre['dv_total_fat_%'] <= 5000
-            ]
-            table_prefiltre = table_prefiltre[
-                table_prefiltre['dv_sugar_%'] <= 50000
-            ]
-            table_prefiltre = table_prefiltre[
-                table_prefiltre['dv_sodium_%'] <= 5000
-            ]
-            table_prefiltre = table_prefiltre[
-                table_prefiltre['dv_protein_%'] <= 2000
-            ]
-            table_prefiltre = table_prefiltre[
-                table_prefiltre['dv_sat_fat_%'] <= 2000
-            ]
-            table_prefiltre = table_prefiltre[
-                table_prefiltre['dv_carbs_%'] <= 5000
-            ]
+            for col, threshold in thresholds.items():
+                table_prefiltre = table_prefiltre[table_prefiltre[col] <= threshold]
 
             final_count = len(table_prefiltre)
             print(f"Number of rows after pre-filtering: {final_count}")
-            print(
-                f"Number of outliers removed during pre-filtering: "
-                f"{initial_count - final_count}"
-            )
+            print(f"Number of outliers removed during pre-filtering: {initial_count - final_count}")
             print("\n")
 
             # Store the outliers
             self.outliers = outliers
 
             return table_prefiltre
+    
         except KeyError as e:
             # Print an error message if pre-filtering fails
             print(f"Error during data pre-filtering: {e}")
@@ -306,32 +139,12 @@ class Preprocessing:
             return pd.DataFrame()
 
     def gaussian_normalisation(self):
-        """
-        Apply Gaussian normalization to the pre-filtered data.
-
-        Returns:
-        --------
-
-        pd.DataFrame
-            A DataFrame containing the Gaussian-normalized nutrition data
-        pd.DataFrame
-            A DataFrame containing the outliers removed during preprocessing
-        """
-        gauss_configs = {'colname': [
-            'dv_calories_%',
-            'dv_total_fat_%',
-            'dv_sugar_%',
-            'dv_sodium_%',
-            'dv_protein_%',
-            'dv_sat_fat_%',
-            'dv_carbs_%'
-        ]}
+        gauss_configs = {'colname': ['dv_calories_%', 'dv_total_fat_%', 'dv_sugar_%', 'dv_sodium_%', 'dv_protein_%', 'dv_sat_fat_%', 'dv_carbs_%']}
         try:
             table_gauss = self.prefiltredata.copy()
             
             initial_outliers_count = len(self.outliers)
-            print(f"Number of rows in the outliers DataFrame before processing: "
-                  f"{initial_outliers_count}")  # test unitaire
+            print(f"Number of rows in the outliers DataFrame before processing: {initial_outliers_count}") 
 
             # Apply Gaussian normalization to each column
             for col in gauss_configs['colname']:
@@ -349,34 +162,17 @@ class Preprocessing:
             DF_noOutliers = table_gauss.copy()
             DF_outliers = self.outliers.copy()
 
-            print(
-                f"Size of DF_noOutliers before processing: "
-                f"{len(DF_noOutliers)}")  # test unitaire
-            print(
-                f"Size of Total_outliers before processing: "
-                f"{len(DF_outliers)}")  # test unitaire
-            print("\n")
-
             # Identify and remove outliers (values >= 3) for each column
             for col in DF_noOutliers.columns:
                 if col == 'id':
                     continue
                 col_outliers = DF_noOutliers[DF_noOutliers[col] >= 3]
-                print(
-                    f"Number of outliers found in column {col}: "
-                    f"{len(col_outliers)}")
+                print(f"Number of outliers found in column {col}: {len(col_outliers)}")
                 DF_outliers = pd.concat([DF_outliers, col_outliers])
                 DF_noOutliers = DF_noOutliers[DF_noOutliers[col] < 3].copy()
 
             # Store the new outliers
             self.outliers = DF_outliers.drop_duplicates()
-
-            print("\n")
-            print(
-                f"Size of DF_noOutliers after processing: "
-                f"{len(DF_noOutliers)}")  # test unitaire
-            print(f"Size of DF_outliers after processing: {len(DF_outliers)}")
-            print("\n")
 
             return DF_noOutliers, DF_outliers
         except KeyError as e:
@@ -387,43 +183,24 @@ class Preprocessing:
             # Print an unexpected error message
             print(f"Unexpected error: {e}")
             return pd.DataFrame()
-
-    # denormalisation of the data from the gaussian_normalisation     
-    def Denormalisation(self, DF_noOutliers, DF_outliers): 
-        """
-        Denormalizes the Gaussian-normalized data to get 2 separate dataframes:
-
-        Parameters:
-        -----------
-        DF_noOutliers : pd.DataFrame
-            A DataFrame containing the Gaussian-normalized data without outliers
-
-        DF_outliers : pd.DataFrame
-            A DataFrame containing the outliers removed during preprocessing
-
-        Returns:
-        --------
-        pd.DataFrame
-            A DataFrame containing the denormalized data without outliers
-        pd.DataFrame
-            A DataFrame containing the denormalized outliers
-        """
+        
+    def Denormalisation(self, DF_noOutliers, DF_outliers): # denormalisation of the data from the gaussian_normalisation
         try:
             # Denormalize the Gaussian normalized data
             finalDF_noOutliers = DF_noOutliers.copy()
             finalDF_outliers = DF_outliers.copy()
             
-            # Combine the columns from grillecolname with 
-            # dv_total_fat_% and dv_carbs_%
-            columns_to_denormalize = (
-                self.configs['grillecolname'] + ['dv_total_fat_%', 'dv_carbs_%']
-            )
+            # Combine the columns from grillecolname with dv_total_fat_% and dv_carbs_%
+            columns_to_denormalize = self.configs['grillecolname'] + ['dv_total_fat_%', 'dv_carbs_%']
             
             for col in columns_to_denormalize:
                 mu = self.mu_values[col]
                 sigma = self.sigma_values[col]
-                finalDF_noOutliers[col] = finalDF_noOutliers[col] * sigma + mu
-                finalDF_outliers[col] = finalDF_outliers[col] * sigma + mu
+                finalDF_noOutliers[col] = (finalDF_noOutliers[col] * sigma + mu).round(3)
+                finalDF_outliers[col] = (finalDF_outliers[col] * sigma + mu).round(3)
+
+            #print(tabulate(finalDF_noOutliers.head(30), headers='keys', tablefmt='pretty'))
+            #print(tabulate(finalDF_outliers.head(30), headers='keys', tablefmt='pretty'))
 
             return finalDF_noOutliers, finalDF_outliers
         except KeyError as e:
@@ -434,21 +211,95 @@ class Preprocessing:
             # Print an unexpected error message
             print(f"Unexpected error: {e}")
             return pd.DataFrame()
+        
+    def SQL_database(self):
+        # Create a PostgreSQL database and store the preprocessed data
+        try:
+            # Informations de connexion à la base de données PostgreSQL
+            postgresql_config = {
+                'host': '62.169.24.75',
+                'database': 'streamlit',
+                'username': 'streamlit_user',
+                'password': '123456789',  
+                'port': 5432
+            }
 
+            db_host = postgresql_config['host']
+            db_name = postgresql_config['database']
+            db_user = postgresql_config['username']
+            db_password = postgresql_config['password']
+            db_port = postgresql_config['port']
+
+            # Créer une connexion à la base de données PostgreSQL
+            engine = create_engine(f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}')
+            conn = engine.connect()
+
+            # Store the formatted data in the database
+            self.formatdata.to_sql('Formatted_data', conn, if_exists='replace', index=False)
+            # Store normalized data in the database
+            self.normaldata.to_sql('nutrition_withOutliers', conn, if_exists='replace', index=False)
+            # Store finalDF_noOutliers from Denormalisation(self, DF_noOutliers, DF_outliers) in the database
+            self.denormalizedata.to_sql('nutrition_noOutliers', conn, if_exists='replace', index=False)
+            # Store finalDF_outliers from Denormalisation(self, DF_noOutliers, DF_outliers) in the database
+            self.denormalized_outliers.to_sql('outliers', conn, if_exists='replace', index=False)
+            # Store the gaussian normalized data in the database
+            self.gaussiandata.to_sql('gaussian_norm_data', conn, if_exists='replace', index=False)
+            # Store the prefiltered data in the database
+            self.prefiltredata.to_sql('prefiltre_data', conn, if_exists='replace', index=False)
+
+            # Close the database connection
+            conn.close()
+        except Exception as e:
+            # Print an error message if database creation fails
+            print(f"Error while creating PostgreSQL database: {e}")
 
 def main():
-    path = 'src/datasets/RAW_recipes.csv'
+    # Informations de connexion à la base de données PostgreSQL
+    postgresql_config = {
+        'host': '62.169.24.75',
+        'database': 'streamlit',
+        'username': 'streamlit_user',
+        'password': '123456789',  
+        'port': 5432
+    }
+
+    db_host = postgresql_config['host']
+    db_name = postgresql_config['database']
+    db_user = postgresql_config['username']
+    db_password = postgresql_config['password']
+    db_port = postgresql_config['port']
+
+    # Créer une connexion à la base de données PostgreSQL
+    engine = create_engine(f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}')
+    conn = engine.connect()
+    
+    # Read raw_recipes data from the database
+    query = "SELECT * FROM raw_recipes"
+    df = pd.read_sql_query(query, conn)
+    
+    # Close the database connection
+    conn.close()
+    
+    configs = {
+        'nutritioncolname': ['calories', 'total_fat_%', 'sugar_%', 'sodium_%', 'protein_%', 'sat_fat_%', 'carbs_%'],
+        'grillecolname': ['dv_calories_%', 'dv_sat_fat_%', 'dv_sugar_%', 'dv_sodium_%', 'dv_protein_%'],
+        'dv_calories': 2000
+    }
 
     # Create an instance of the Preprocessing class
-    preprocessing_instance = Preprocessing(path, configs)
+    preprocessing_instance = Preprocessing(df, configs)
+
+    # Save the preprocessed data to the database
+    preprocessing_instance.SQL_database()
+
     # Get the formatted and normalized nutrition tables
     nutrition_table = preprocessing_instance.formatdata
     nutrition_table_normal = preprocessing_instance.normaldata
+
     # Print the first few rows of each table
     print(nutrition_table.head())
     print(nutrition_table_normal.head())
     return nutrition_table, nutrition_table_normal
-
 
 if __name__ == '__main__':
     main()
