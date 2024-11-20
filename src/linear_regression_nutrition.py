@@ -1,42 +1,58 @@
 import pandas as pd
-# import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.utils import resample
 from sklearn.metrics import mean_squared_error, r2_score
-from preprocess import Preprocessing
-from preprocess import configs
+from preprocess import Preprocessing, configs
 
 
-path_recipes_data = 'src/datasets/RAW_recipes.csv'
-path_nutriscore_data = 'src/datasets/nutrition_table_nutriscore_no_outliers.csv'
+path_recipes_data = './datasets/RAW_recipes.csv'
+path_nutriscore_data = './datasets/nutrition_table_nutriscore_no_outliers.csv'
 
-recipes_data = Preprocessing(path_recipes_data, configs)
-raw_data = recipes_data.get_formatted_nutrition()
 
-nutriscore_data = pd.read_csv(path_nutriscore_data)
+def load_and_preprocess_recipes_data(recipes_data, configs):
+    """
+    Preprocesses the raw recipes data and return the formatted nutrition data.
 
-merged_data = pd.merge(raw_data, nutriscore_data, on='id')
-columns_to_keep = [
-    'id',
-    'calories',
-    'total_fat_%',
-    'sugar_%',
-    'sodium_%',
-    'protein_%',
-    'sat_fat_%',
-    'carbs_%'
-    ]
+    Parameters:
+    - path_recipes_data: str, the path to the raw recipes data.
+    - configs: dict, the configurations for the preprocessing.
 
-filtered_data = merged_data[columns_to_keep]
-features = ['total_fat_%', 'protein_%', 'carbs_%']
-target = 'calories'
+    Returns:
+    - recipes_data: DataFrame, the formatted nutrition data.
+    """
+    recipes_data = Preprocessing(path_recipes_data, configs)
+    return recipes_data.get_formatted_nutrition()
 
-daily_g_proteins = 50
-daily_g_fat = 70
-daily_g_carbs = 260
+
+def merge_data(raw_data, nutriscore_data):
+    """
+    Merge the raw data with the nutriscore data on the 'id' column.
+
+    Parameters:
+    - raw_data: DataFrame, the raw data to merge.
+    - nutriscore_data: DataFrame, the nutriscore data to merge.
+
+    Returns:
+    - merged_data: DataFrame, the merged data.
+    """
+    return pd.merge(raw_data, nutriscore_data, on='id')
+
+
+def filter_columns(merged_data, columns_to_keep):
+    """
+    Filter the merged data to keep only the specified columns.
+
+    Parameters:
+    - merged_data: DataFrame, the data to filter.
+    - columns_to_keep: list, the columns to keep.
+
+    Returns:
+    - filtered_data: DataFrame, the filtered data.    
+    """
+    return merged_data[columns_to_keep]
 
 
 def linear_regression(data, target, features):
@@ -67,7 +83,11 @@ def linear_regression(data, target, features):
     y_pred = model.predict(X_test)
     mse = mean_squared_error(y_test, y_pred)
     r2 = r2_score(y_test, y_pred)
-    coefficients = pd.DataFrame(model.coef_, features, columns=['Coefficient'])
+    coefficients = pd.DataFrame(
+        model.coef_,
+        index=features,
+        columns=['Coefficient']
+    )
     intercept = model.intercept_
     return mse, r2, intercept, coefficients, y_test, y_pred
 
@@ -75,7 +95,7 @@ def linear_regression(data, target, features):
 def plot_linear_regression(y_test, y_pred):
     """
     Plots the actual vs predicted values of the target variable.
-    
+
     Parameters:
     - y_test: Series, the true values of the target.
     - y_pred: Series, the predicted values of the target
@@ -100,7 +120,12 @@ def plot_linear_regression(y_test, y_pred):
     return plt.show()
 
 
-def calories_per_gram(coefficients):
+def calories_per_gram(
+        coefficients,
+        daily_g_proteins=50,
+        daily_g_fat=70,
+        daily_g_carbs=260
+):
     """
     Calculates the number of calories per gram of proteins, fat, and 
     carbohydrates, based on the recommended daily amount of nutrients in grams.
@@ -122,9 +147,9 @@ def calories_per_gram(coefficients):
         coefficients.loc['carbs_%', 'Coefficient']*100/daily_g_carbs
     )
     calories_per_gram = {
-        'calories per g of proteins': [cal_per_g_proteins],
-        'cal per g of fat': [cal_per_g_fat],
-        'cal per g of carbs': [cal_per_g_carbs]
+        'Calories per gram of Protein': [cal_per_g_proteins],
+        'Calories per gram of Fat': [cal_per_g_fat],
+        'Calories per gram of Carbohydrates': [cal_per_g_carbs]
     }
     return pd.DataFrame(calories_per_gram, index=['Value'])
 
@@ -160,7 +185,7 @@ def bootstrap_confidence_interval(
         # Séparer les features et la variable cible
         X_bootstrap = bootstrap_sample[features]
         y_bootstrap = bootstrap_sample[target]
-        
+
         # Créer et entraîner le modèle de régression linéaire
         model = LinearRegression()
         model.fit(X_bootstrap, y_bootstrap)
@@ -186,13 +211,33 @@ def bootstrap_confidence_interval(
 
 
 def main():
-    mse, r2, coefficients, y_test, y_pred = linear_regression(
+    raw_data = load_and_preprocess_recipes_data(path_recipes_data, configs)
+    nutriscore_data = pd.read_csv(path_nutriscore_data)
+    merged_data = merge_data(raw_data, nutriscore_data)
+
+    columns_to_keep = [
+        'id',
+        'calories',
+        'total_fat_%',
+        'sugar_%',
+        'sodium_%',
+        'protein_%',
+        'sat_fat_%',
+        'carbs_%'
+    ]
+
+    filtered_data = filter_columns(merged_data, columns_to_keep)
+    features = ['total_fat_%', 'protein_%', 'carbs_%']
+    target = 'calories'
+
+    mse, r2, intercept, coefficients, y_test, y_pred = linear_regression(
         filtered_data,
         target,
         features
     )
     print(linear_regression(filtered_data, target, features))
     plot_linear_regression(y_test, y_pred)
+
     print(calories_per_gram(coefficients))
 
     intervals = bootstrap_confidence_interval(filtered_data, target, features)
