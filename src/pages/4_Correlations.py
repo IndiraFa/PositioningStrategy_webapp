@@ -5,29 +5,131 @@ import os
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+import psycopg2
 
 from recipe_correlation_analysis import correlation_matrix
-from recipe_correlation_analysis import filtered_data
-from interaction_correlation_analysis import merged_data, label_analysis_result
+from interaction_correlation_analysis import (
+    interactions_df, 
+    interactions_and_nutriscore_df,
+    label_analysis
+)
 
 st.set_page_config(layout="centered")
 
-#allows to import packages from the parent folder
+# allows to import packages from the parent folder
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+# from utils.config_logging import configure_logging
+# logger = configure_logging()
+
+
+try:
+    db_host = st.secrets["connections"]["postgresql"]["host"]
+    db_port = st.secrets["connections"]["postgresql"]["port"]
+    db_user = st.secrets["connections"]["postgresql"]["username"]
+    db_password = st.secrets["connections"]["postgresql"]["password"]
+    db_name = st.secrets["connections"]["postgresql"]["database"]
+
+    # logger.info("Connecting to the database ...")
+
+    conn = psycopg2.connect(
+        host=db_host,
+        port=db_port,
+        user=db_user,
+        password=db_password,
+        dbname=db_name
+    )
+
+    # logger.info("Successfully connected to the database")
+
+    query1 = """
+    SELECT 
+        ns.id,
+        ns."dv_calories_%",
+        ns."dv_total_fat_%",
+        ns."dv_sugar_%",
+        ns."dv_sodium_%",
+        ns."dv_protein_%",
+        ns."dv_sat_fat_%",
+        ns."dv_carbs_%",
+        ns."nutriscore",
+        rr."minutes",
+        rr."n_steps",
+        rr."n_ingredients"
+    FROM "raw_recipes" rr 
+    INNER JOIN "NS_noOutliers" ns 
+    ON rr.id=ns.id;"""
+
+    query2 = """
+    SELECT * FROM "RAW_interactions";
+    """
+
+    query3 = """
+    SELECT * FROM "NS_noOutliers";
+    """
+
+    filtered_data = pd.read_sql_query(query1, conn)
+    interaction_data = pd.read_sql_query(query2, conn)
+    nutriscore_data = pd.read_sql_query(query3, conn)
+
+    # logger.info("Successfully read the data from the database")
+
+    conn.close()
+    # logger.info("Connection to the database closed")
+
+except Exception as e:
+    # logger.error(f"An error occurred: {e}")
+    st.error("An error occurred while connecting to the database")
+
+result = interactions_df(interaction_data)
+merged_data = interactions_and_nutriscore_df(result, nutriscore_data)
+label_analysis_result = label_analysis(merged_data)
+
 
 st.markdown(
     "<h1 style='color:purple;'>Correlation analysis</h1>",
     unsafe_allow_html=True
 )
 
-# ajouter la conclusion de l'analyse de corrélation : pour améliorer la 
-# crédibilité du site, mettre en place un système de vérification des données 
-# nutritionnelles ou de calcul automatisé. 
+css_styles = """
+    <style>
+    .container_with_border {
+        border: 1px solid rgba(49, 51, 63, 0.2);
+        border-radius: 0.5rem;
+        padding: calc(1em - 1px);
+        background-color: #f3e5f5;
+    }
+    .container_with_border h3 {
+        color: purple;
+    }
+    .container_with_border p {
+        color: black;
+    }
+    </style>
+"""
+st.markdown(css_styles, unsafe_allow_html=True)
+
+st.markdown("""
+    <div class="container_with_border">
+        <h3>💡 Key takeaways</h3>
+        <p>xxxxxx.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+"---"
+
 st.write(
     """
-    ## Correlation between characterics of recipes and their nutritional score
+    ## 🍜 + ⏳ + 📊
+    ## Correlation between characterics of recipes and their nutritional score 
     """
 )
+
+st.write("""
+         We analyzed xxxxxx
+""", unsafe_allow_html=True)
+
 
 columns_of_interest = [
     'dv_calories_%',
@@ -64,17 +166,21 @@ if selected_columns:
 else:
     st.write("Please select at least one column.")
 
-
+"---"
 st.write(
     """
-    ## Correlation between interactions and nutritional score of the recipes.
-         We computed for each recipe the number of interactions 
+    ## ⭐️⭐️⭐️⭐️⭐️ + 📊
+    ## Correlation between interactions and nutritional score  of the recipes.
+    """
+)
+st.write(
+    """We computed for each recipe the number of interactions 
          (reviews + ratings), number of reviews, number of ratings and the 
          average rating, along with the Nutriscore.
-         """
+    """
 )
 
-st.dataframe(merged_data)
+# st.dataframe(merged_data)
 
 columns_of_interest = [
     'interaction_count',
@@ -87,7 +193,12 @@ columns_of_interest = [
 selected_columns_2 = st.multiselect(
     "Select columns for correlation matrix",
     columns_of_interest,
-    default=columns_of_interest
+    default=[
+        'review_count',
+        'rating_count',
+        'average_rating',
+        'nutriscore'
+    ]
 )
 
 if selected_columns_2:
