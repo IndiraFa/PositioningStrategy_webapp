@@ -1,20 +1,15 @@
 import os
-import sys
 import streamlit as st
 import pandas as pd
 import psycopg2
+import logging
 
-# current_dir = os.path.dirname(os.path.abspath(__file__))
-# parent_dir = os.path.abspath(os.path.join(current_dir, os.pardir, os.pardir))
-# sys.path.append(parent_dir)
-
-# from utils.config_logging import configure_logging
-
-# logger = configure_logging()
 
 st.set_page_config(layout="centered")
 
-# logger.info("Starting the 6_Appendix.py script")
+logger = logging.getLogger("app.pages.6_Appendix.log")
+
+logger.info("Starting the 6_Appendix.py script")
 
 try:
     db_host = st.secrets["connections"]["postgresql"]["host"]
@@ -23,7 +18,7 @@ try:
     db_password = st.secrets["connections"]["postgresql"]["password"]
     db_name = st.secrets["connections"]["postgresql"]["database"]
 
-    # logger.info("Connecting to the database ...")
+    logger.info("Connecting to the database ...")
 
     conn = psycopg2.connect(
         host=db_host,
@@ -33,18 +28,18 @@ try:
         dbname=db_name
     )
 
-    # logger.info("Successfully connected to the database")
+    logger.info("Successfully connected to the database")
 
     query = 'SELECT * FROM "NS_withOutliers";'
     df2 = pd.read_sql_query(query, conn)
 
-    # logger.info("Successfully read the data from the database")
+    logger.info("Successfully read the data from the database")
 
     conn.close()
-    # logger.info("Connection to the database closed")
+    logger.info("Connection to the database closed")
 
 except Exception as e:
-    # logger.error(f"An error occurred: {e}")
+    logger.error(f"An error occurred: {e}")
     st.error("An error occurred while connecting to the database")
 
 # Titre de la page
