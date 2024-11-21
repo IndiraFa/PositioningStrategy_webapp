@@ -280,6 +280,7 @@ def main(arg):
     # create test directory to save test output
     PARENT_DIR = os.path.dirname(CURRENT_DIR)
     dir_test = os.path.join(PARENT_DIR, 'tests/tags')
+    print(CURRENT_DIR)
     # Before analyse tags, we need to load the dataset and extract tags from the dataset and save on new dataframe
     # load raw data
     # path = os.path.join(PARENT_DIR, 'dataset/RAW_recipes.csv')
@@ -311,7 +312,7 @@ def main(arg):
     tags_instance = Tags(new_data_tags, tags_reference)
     ids_recipes_target = np.array(tags_instance.get_recipes_from_tags())
     print('number of recipes with tags target:', len(ids_recipes_target))
-    logger.info('number of recipes with tags target:', len(ids_recipes_target))
+    # logger.info('number of recipes with tags target:', len(ids_recipes_target))
 
     try:
         len(ids_recipes_target) > len(tags_reference.split(','))
