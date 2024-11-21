@@ -6,10 +6,9 @@ import numpy as np
 import psycopg2
 import matplotlib.pyplot as plt
 from linear_regression_nutrition import (
-    linear_regression, plot_linear_regression,
-    calories_per_gram, bootstrap_confidence_interval
+    LinearRegressionNutrition,
+    calories_per_gram
 )
-
 
 st.set_page_config(layout="centered")
 # allows to import packages from the parent folder
@@ -20,7 +19,6 @@ st.set_page_config(layout="centered")
 
 # from utils.config_logging import configure_logging
 # logger = configure_logging()
-
 
 try:
     db_host = st.secrets["connections"]["postgresql"]["host"]
@@ -41,7 +39,7 @@ try:
 
     # logger.info("Successfully connected to the database")
 
-    query1 = """
+    query = """
     SELECT 
         ns.id,
         fd.calories,
@@ -55,7 +53,7 @@ try:
     INNER JOIN "NS_noOutliers" ns 
     ON fd.id=ns.id;"""
 
-    filtered_data = pd.read_sql_query(query1, conn)
+    filtered_data = pd.read_sql_query(query, conn)
 
     # logger.info("Successfully read the data from the database")
 
@@ -139,6 +137,12 @@ def plot_confidence_intervals(nutrient):
 features = ['total_fat_%', 'protein_%', 'carbs_%']
 target = 'calories'
 
+lr_nutrition = LinearRegressionNutrition(
+        filtered_data,
+        target,
+        features
+    )
+
 st.markdown(
     "<h1 style='color:purple;'>Correlation analysis</h1>",
     unsafe_allow_html=True
@@ -199,15 +203,13 @@ st.write("""
          """, unsafe_allow_html=True
          )
 
-mse, r2, intercept, coefficients, y_test, y_pred = linear_regression(
-    filtered_data,
-    target,
-    features
-    )
+mse, r2, intercept, coefficients, y_test, y_pred = (
+    lr_nutrition.linear_regression()
+)
 
 write_linear_regression_results(coefficients, intercept, mse, r2)
 
-plot_linear_regression(y_test, y_pred)
+lr_nutrition.plot_linear_regression(y_test, y_pred)
 st.pyplot(plt)
 
 st.write("""
@@ -236,11 +238,8 @@ conf_level = st.slider(
     key=1
     )
 
-confidence_intervals = bootstrap_confidence_interval(
-    filtered_data,
-    target,
-    features,
-    num_bootstrap_samples=1000, 
+confidence_intervals = lr_nutrition.bootstrap_confidence_interval(
+    num_bootstrap_samples=500, 
     confidence_level=conf_level
     )
 intervals_df = pd.DataFrame(
@@ -280,10 +279,10 @@ st.pyplot(fig3)
 
 st.write("""
         The confidence intervals show that the coefficients are significantly 
-        different from the reference values, even with lower confidence 
-         level.""",
+        different from the reference values, even with the highest confidence 
+        level.""",
         unsafe_allow_html=True
-    )
+        )
 
 st.write("#### Reference values")
 
