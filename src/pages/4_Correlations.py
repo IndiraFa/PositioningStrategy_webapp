@@ -7,11 +7,7 @@ from recipe_correlation_analysis import CorrelationAnalysis
 from interaction_correlation_analysis import InteractionData, LabelAnalysis
 from streamlit_todb import fetch_data_from_db, configs_db
 
-
 st.set_page_config(layout="centered")
-
-# allows to import packages from the parent folder
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # SQL queries
 query1 = """
