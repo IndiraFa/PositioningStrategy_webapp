@@ -25,9 +25,10 @@ class DataPreprocessing:
     - filter_columns: Filter the merged data to keep only the specified 
     columns.
     """
-    def __init__(self, path_recipes_data, path_nutriscore_data):
+    def __init__(self, path_recipes_data=None, path_nutriscore_data=None, data=None):
         self.path_recipes_data = path_recipes_data
         self.path_nutriscore_data = path_nutriscore_data
+        self.data = data
 
     def load_and_preprocess_recipes_data(self):
         """
@@ -41,8 +42,11 @@ class DataPreprocessing:
         Returns:
         - recipes_data: DataFrame, the formatted nutrition data.
         """
-        recipes_data = Preprocessing(self.path_recipes_data, configs)
-        return recipes_data.get_formatted_nutrition()
+        if self.data is not None:
+            return self.data
+        else:
+            recipes_data = Preprocessing(self.path_recipes_data, configs)
+            return recipes_data.get_formatted_nutrition()
 
     def merge_data(self, raw_data, nutriscore_data):
         """
@@ -56,7 +60,7 @@ class DataPreprocessing:
         - merged_data: DataFrame, the merged data.
         """
         return pd.merge(raw_data, nutriscore_data, on='id')
-    
+
     def filter_columns(self, merged_data, columns_to_keep):
         """
         Filter the merged data to keep only the specified columns.
@@ -128,7 +132,7 @@ class LinearRegressionNutrition:
         )
         intercept = model.intercept_
         return mse, r2, intercept, coefficients, y_test, y_pred
-    
+
     def plot_linear_regression(self, y_test, y_pred):
         """
         Plots the actual vs predicted values of the target variable.
@@ -155,7 +159,7 @@ class LinearRegressionNutrition:
         plt.legend()
         plt.grid(True)
         return plt.show(block=False)
-    
+
     def bootstrap_confidence_interval(
             self,
             num_bootstrap_samples=1000,
@@ -182,7 +186,7 @@ class LinearRegressionNutrition:
         for _ in range(num_bootstrap_samples):
             # Rééchantillonner les données avec remplacement
             bootstrap_sample = resample(self.data)
-            
+
             # Séparer les features et la variable cible
             X_bootstrap = bootstrap_sample[self.features]
             y_bootstrap = bootstrap_sample[self.target]
@@ -190,13 +194,13 @@ class LinearRegressionNutrition:
             # Créer et entraîner le modèle de régression linéaire
             model = LinearRegression()
             model.fit(X_bootstrap, y_bootstrap)
-            
+
             # Stocker les coefficients
             coefficients.append(model.coef_)
-        
+
         # Convertir les coefficients en DataFrame
         coefficients_df = pd.DataFrame(coefficients, columns=self.features)
-        
+
         # Calculer les intervalles de confiance
         intervals = {}
         for feature in self.features:
@@ -218,14 +222,14 @@ def calories_per_gram(
         daily_g_carbs=260
 ):
     """
-    Calculates the number of calories per gram of proteins, fat, and 
+    Calculates the number of calories per gram of proteins, fat, and
     carbohydrates, based on the recommended daily amount of nutrients in grams.
 
     Parameters:
     - coefficients: DataFrame, the coefficients of the linear regression model.
 
     Returns:
-    - calories_per_gram: DataFrame, the number of calories per gram of 
+    - calories_per_gram: DataFrame, the number of calories per gram of
     proteins, fat, and carbohydrates.
     """
     cal_per_g_proteins = (
