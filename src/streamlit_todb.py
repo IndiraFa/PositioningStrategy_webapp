@@ -10,7 +10,11 @@ configs_db = {
     "db_name": st.secrets["connections"]["postgresql"]["database"]
 }
 
-def fetch_data_from_db(configs_db, query1=None, query2=None, query3=None, query4=None):
+def fetch_data_from_db(configs_db,
+                       query1=None,
+                       query2=None,
+                       query3=None, query4=None
+):
     """
     Connect to the database, execute queries, and fetch data into DataFrames.
 
@@ -84,7 +88,12 @@ def main():
     SELECT * FROM "NS_noOutliers";
     """
 
-    data1, data2, data3, _ = fetch_data_from_db(configs_db, query1, query2, query3)
+    data1, data2, data3, _ = fetch_data_from_db(
+        configs_db,
+        query1,
+        query2,
+        query3
+    )
 
     if data1 is not None:
         print(data1.head())
