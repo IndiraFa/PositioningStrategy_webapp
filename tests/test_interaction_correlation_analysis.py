@@ -4,12 +4,16 @@ import pytest
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 # to be able to import the module from the src folder
 sys.path.insert(0, os.path.abspath(os.path.join
                                    (os.path.dirname(__file__), '../src')
                                    ))
-from interaction_correlation_analysis import InteractionData, LabelAnalysis
+from interaction_correlation_analysis import (
+    InteractionData,
+    LabelAnalysis,
+    main
+)
 
 # Test the InteractionData class
 
@@ -244,3 +248,45 @@ def test_label_analysis(test_label_data):
 
     pd.testing.assert_frame_equal(result, expected_result), \
         "The output is not correct"
+    
+
+# Test the main function
+@patch('pandas.read_csv')
+@patch('interaction_correlation_analysis.InteractionData')
+@patch('interaction_correlation_analysis.LabelAnalysis')
+def test_main(
+    mock_label_analysis,
+    mock_interaction_data,
+    mock_read_csv,
+    test_interaction_data,
+    test_nutriscore_data
+):
+    """
+    Test the main function
+    """
+    mock_read_csv.side_effect = [test_interaction_data, test_nutriscore_data]
+
+    mock_interaction_instance = mock_interaction_data.return_value
+    mock_interaction_instance.data = test_interaction_data
+    mock_interaction_instance.merge_interaction_nutriscore.return_value \
+        = test_interaction_data
+    mock_interaction_instance.interaction_correlation_matrix.return_value \
+        = pd.DataFrame({
+        'interaction_count': [1, 2, 3],
+        'average_rating': [4.5, 4.0, 3.5],
+        'nutriscore': [10, 20, 30]
+    })
+    # Mock the LabelAnalysis class
+    mock_label_analysis_instance = mock_label_analysis.return_value
+    mock_label_analysis_instance.label_analysis.return_value = pd.DataFrame({
+        'label': ['A', 'B', 'C'],
+        'average_rating': [4.5, 4.0, 3.5],
+        'interaction_count': [10, 20, 30],
+        'recipe_count': [1, 1, 1],
+        'interaction_recipe_ratio': [10, 20, 30]
+    })
+
+    with patch('builtins.print') as mock_print:
+        main()
+        # Check that the print function was called
+        assert mock_print.call_count == 4, "The print function was not called"

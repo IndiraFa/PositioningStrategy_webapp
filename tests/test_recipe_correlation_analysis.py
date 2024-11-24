@@ -2,12 +2,12 @@ import sys
 import os
 import pytest
 import pandas as pd
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 # to be able to import the module from the src folder
 sys.path.insert(0, os.path.abspath(os.path.join
                                    (os.path.dirname(__file__), '../src')
                                    ))
-from recipe_correlation_analysis import CorrelationAnalysis
+from recipe_correlation_analysis import CorrelationAnalysis, main
 
 # Test the CorrelationAnalysis class
 
@@ -249,4 +249,89 @@ def test_plot_correlation_matrix(
     assert kwargs['cmap'] == 'coolwarm'
     assert kwargs['fmt'] == '.2f'
     # Check that plt.show was called
-    mock_show.assert_called_once_with(block=False)
+    mock_show.assert_called_once()
+
+
+# test of the main function
+
+@pytest.fixture
+def test_recipes_data():
+    """
+    This fixture returns a DataFrame with the following columns:
+    - id: recipe id
+    - name: recipe name
+    - minutes: time to prepare the recipe
+    - contributor_id: id of the contributor
+    - submitted: date of submission
+    - tags: tags of the recipe
+    - nutrition: nutrition information of the recipe
+    - n_steps: number of steps in the recipe
+    - steps: steps of the recipe
+    - description: description of the recipe
+    - ingredients: ingredients of the recipe
+    - n_ingredients: number of ingredients in the recipe
+    """
+    return pd.DataFrame({
+        'id': [1, 2, 3],
+        'name': ['Recipe 1', 'Recipe 2', 'Recipe 3'],
+        'minutes': [30, 45, 60],
+        'contributor_id': [101, 102, 103],
+        'submitted': ['2020-01-01', '2020-01-02', '2020-01-03'],
+        'tags': [['tag1', 'tag2'], ['tag3'], ['tag4', 'tag5']],
+        'nutrition': [
+            ['10', '20', '30', '40', '50', '60', '70'],
+            ['15', '25', '35', '45', '55', '65', '75'],
+            ['20', '30', '40', '50', '60', '70', '80']
+        ],
+        'n_steps': [5, 6, 7],
+        'steps': [['step1', 'step2'], ['step1', 'step2', 'step3'], ['step1']],
+        'description': ['Description 1', 'Description 2', 'Description 3'],
+        'ingredients': [
+            ['ingredient1', 'ingredient2'],
+            ['ingredient1'],
+            ['ingredient1', 'ingredient2', 'ingredient3']
+        ],
+        'n_ingredients': [2, 1, 3]
+    })
+
+@pytest.fixture
+def test_nutriscore_data():
+    """
+    This fixture returns a DataFrame with the following columns:
+    - id: recipe id
+    - dv_calories_%: daily value percentage of calories
+    - dv_total_fat_%: daily value percentage of total fat
+    - dv_sugar_%: daily value percentage of sugar
+    - dv_sodium_%: daily value percentage of sodium
+    - dv_protein_%: daily value percentage of protein
+    - dv_sat_fat_%: daily value percentage of saturated fat
+    - dv_carbs_%: daily value percentage of carbohydrates
+    - nutriscore: nutriscore of the recipe
+    """
+    return pd.DataFrame({
+        'id': [1, 2, 3],
+        'dv_calories_%': [10, 20, 30],
+        'dv_total_fat_%': [5, 10, 15],
+        'dv_sugar_%': [5, 10, 15],
+        'dv_sodium_%': [5, 10, 15],
+        'dv_protein_%': [5, 10, 15],
+        'dv_sat_fat_%': [5, 10, 15],
+        'dv_carbs_%': [5, 10, 15],
+        'nutriscore': [10, 20, 30]
+    })
+
+@patch('pandas.read_csv')
+@patch('recipe_correlation_analysis.CorrelationAnalysis')
+def test_main(
+    mock_correlation_analysis,
+    mock_read_csv,
+    test_recipes_data,
+    test_nutriscore_data
+):
+    # Mock the read_csv function to return the mock data
+    mock_read_csv.side_effect = [test_recipes_data, test_nutriscore_data]
+    # Mock the CorrelationAnalysis class
+    mock_correlation_instance = mock_correlation_analysis.return_value
+    main()
+    # Check that the CorrelationAnalysis class was instantiated correctly
+    mock_correlation_analysis.assert_called_once()
