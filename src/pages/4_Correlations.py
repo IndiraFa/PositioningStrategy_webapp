@@ -1,6 +1,4 @@
 import streamlit as st
-import sys
-import os
 import seaborn as sns
 import matplotlib.pyplot as plt
 from recipe_correlation_analysis import CorrelationAnalysis
@@ -37,6 +35,11 @@ SELECT * FROM "NS_noOutliers";
 """
 
 
+@st.cache_data
+def get_cached_data(configs_db, query1, query2, query3):
+    return fetch_data_from_db(configs_db, query1, query2, query3)
+
+
 def display_header():
     """
     Display the header of the page.
@@ -47,6 +50,16 @@ def display_header():
     st.markdown(
         "<h1 style='color:purple;'>Correlation analysis</h1>",
         unsafe_allow_html=True
+    )
+
+    st.write(
+            """
+            We then explored the linear correlation between :
+            - the calculated nutritional
+             score and the characteristics of the recipes. 
+            - the calculated nutritional score and the interactions of the 
+            users (reviews and scores)
+            """
     )
 
     css_styles = """
@@ -70,7 +83,26 @@ def display_header():
     st.markdown("""
         <div class="container_with_border">
             <h3>💡 Key takeaways</h3>
-            <p>xxxxxx.</p>
+            <p>- This analysis shows some correlations between the nutritional 
+                data that are expected and to the chemical composition of each 
+                nutrient.</p>
+            <br>
+            <p>- The correlations between the Nutriscore and the nutritional 
+                data are in line with the way the Nutriscore was calculated 
+                (as a linear combination of nutritional variables).</p>
+            <br>
+            <p>- No correlation is seen with the number of ingredients, of 
+                steps or the preparation time.</p>
+            <br>
+            <p>- Finally, no strong correlation is observed with the 
+            interactions of the users of the website. Nevertheless, the lowest
+                lablest have the best interaction per recipe ratio, and we can 
+                conclude that all kinds of recipes are enjoyed, no matter their 
+            Nutriscore.</p>
+            <p><b>We recommend Mangetamain to keep a variety of recipes on the 
+                website, even it they want to promote healthy eating, beacause
+                lower nutriscore recipes may drive trafic and interaction.
+                </b></p> 
         </div>
         """, unsafe_allow_html=True)
 
@@ -88,14 +120,11 @@ def display_recipe_correlation(filtered_data):
     st.write(
         """
         ## 🍜 + ⏳ + 📊
-        ## Correlation between characterics of recipes and their nutritional 
-        ## score 
-        """
+        <h2>Correlation between characterics of recipes and their nutritional 
+        score</h2>
+        """, 
+        unsafe_allow_html=True
     )
-
-    st.write("""
-             We analyzed xxxxxx
-    """, unsafe_allow_html=True)
 
     columns_to_keep_recipe = [
         'id',
@@ -125,8 +154,9 @@ def display_recipe_correlation(filtered_data):
         'n_steps',
         'n_ingredients'
     ] 
+
     selected_columns = st.multiselect(
-        "Select columns for correlation matrix",
+        "Select the columns to display in the correlation matrix",
         columns_of_interest_recipe,
         default=columns_of_interest_recipe
     )
@@ -146,6 +176,37 @@ def display_recipe_correlation(filtered_data):
     else:
         st.write("Please select at least one column.")
 
+    st.write("""
+        We can see on this heatmap the linear correlations between 
+        different characteristics of the recipes:
+        <br>
+        - There is an <b>expected positive correlation</b> between the 
+        number of 
+        ingredients (<i>n_ingredients</i>) and the number of steps 
+        (<i>n_steps</i>) of the recipe (0.43), but <b>surprisingly no 
+        correlation</b> between these variables and the preparation time 
+        (<i>minutes</i>).
+        <br>
+        - The Nutriscore is <b>positively</b> correlated with the percentage of 
+        recommanded daily protein intake (<i>dv_protein_%</i>, 0.24), and 
+        <b>negatively</b> correlated with the percentage of recommanded daily 
+        intake of sugar (<i>dv_sugar_%</i>, -0.36), saturated fat 
+        (<i>dv_sat_fat_%</i>, 0.25), sodium (<i>dv_sodium_%</i>, -0.44)and 
+             calories per 
+        portion(<i>dv_calories_%</i>, -0.11), because of the way the Nutriscore 
+        is calculated (see Appendix for the formula)
+        - The total fat (<i>dv_total_fat_%</i>) and the saturated fat 
+             (<i>dv_sat_fat_%</i>) are also <b>positively</b> correlated 
+             (0.69) which is due to the fact that the total fat includes the 
+             saturated fat.
+         - The <b>same</b> goes for the carbohydrates (<i>dv_carbs_%</i>) and 
+             the sugar (<i>dv_sugar_%</i>), which are positively correlated 
+             (0.58).
+        - A non intuitive strong correlation is the <b>negative</b> correlation
+              between the carbohydrates (<i>dv_carbs_%</i>) and the total fat 
+             (<i>dv_total_fat_%</i>) (-0.73). 
+    """, unsafe_allow_html=True)
+
 
 def display_interaction_correlation(interaction_data, nutriscore_data):
     """
@@ -161,16 +222,21 @@ def display_interaction_correlation(interaction_data, nutriscore_data):
     st.write(
         """
         ## ⭐️⭐️⭐️⭐️⭐️ + 📊
-        ## Correlation between interactions and nutritional score of the 
-        ## recipes.
-        """
+        <h2>Correlation between interactions and nutritional score of the  
+        recipes</h2>
+        """,
+        unsafe_allow_html=True
     )
     st.write(
-        """We computed for each recipe the number of interactions 
-             (reviews + ratings), number of reviews, number of ratings and the 
-             average rating, along with the Nutriscore.
-        """
+        """We computed for each recipe the number of reviews 
+        (<i>review_count</i>), number of ratings (<i>rating_count</i>) 
+        number of interactions (<i>interaction_count = reviews_count + 
+        ratings_count</i>), and the average rating (<i>average_rating</i>), 
+        along with the Nutriscore.
+        """, 
+        unsafe_allow_html=True
     )
+    
     int_data = InteractionData(data=interaction_data)
     label_analysis = LabelAnalysis()
 
@@ -183,7 +249,6 @@ def display_interaction_correlation(interaction_data, nutriscore_data):
         'nutriscore',
         'label'
     ]
-    # interaction_df = int_data.interactions_df()
     merged_data = int_data.merge_interaction_nutriscore(
         nutriscore_data,
         columns_to_keep_interaction
@@ -199,7 +264,7 @@ def display_interaction_correlation(interaction_data, nutriscore_data):
     ]
 
     selected_columns_2 = st.multiselect(
-        "Select columns for correlation matrix",
+        "Select the columns to display in the correlation matrix",
         columns_of_interest_interaction,
         default=[
             'review_count',
@@ -219,21 +284,36 @@ def display_interaction_correlation(interaction_data, nutriscore_data):
         plt.title('Matrice de corrélation')
         st.pyplot(plt)
 
+    st.write(
+        """
+        - There is a perfect linear correlation between the number of reviews, 
+        the number of ratings and the number of interactions. This is due to 
+        the fact that all recipes that have a rating also have a review and 
+        vice versa.
+        <br>
+        - There is no correlation between the Nutriscore and any of these 
+        features
+        """, 
+        unsafe_allow_html=True
+    )
+
     st.dataframe(label_analysis_result)
 
     st.write(
-        """D-labeled recipes have the best average rating (followed closely by 
-        C and B-labelled recipes). They also have the best interaction/recipe 
-        ratio, followed by E-labelled recipes. Although these varaitions are 
-        only by XXXXX% this is a sign that recipes published on the website 
-        should not be selected solely on their Nutriscore, because users also
-        enjoy recipes with a lower Nutriscore.
-        """
+        """The average rating is similar for all the labels, but 
+        <b>D-labeled recipes have the best interaction/recipe 
+        ratio</b>, followed by E-labelled recipes. It represents an <b>increase
+        of +27% of interactions/recipe</b> between A-labelled recipes and 
+        D-labelled recipes. This is a strong sign that recipes published on the
+          website should not be selected solely on their Nutriscore, because 
+          <b>users also enjoy recipes with a lower Nutriscore</b>.
+        """,
+        unsafe_allow_html=True
     )
 
 
 def main():
-    filtered_data, interaction_data, nutriscore_data, _ = fetch_data_from_db(
+    filtered_data, interaction_data, nutriscore_data, _ = get_cached_data(
         configs_db,
         query1,
         query2,
