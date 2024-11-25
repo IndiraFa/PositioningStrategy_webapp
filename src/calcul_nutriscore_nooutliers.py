@@ -1,67 +1,87 @@
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from pathlib import Path
-import seaborn as sns
-from calcul_nutriscore import NutriScore
-from preprocess import Preprocessing
 import psycopg2
-from sqlalchemy import create_engine
 import toml
+import logging
 
-# Lire les informations de connexion depuis secrets.toml
-secrets = toml.load('secrets.toml')
-postgresql_config = secrets['connections']['postgresql']
+# Configuration du journal (logging)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-def calcul_nutriscore_no_outliers(data, grille, configs):
-    # Créer une instance de la classe Preprocessing
-    preprocessor = Preprocessing(data, configs)
-    
-    # Appeler les méthodes sur l'instance de Preprocessing
-    gaussian_norm_data_no_outliers, gaussian_norm_outliers = preprocessor.gaussian_normalisation()
-    final_data_no_outliers, final_outliers = preprocessor.Denormalisation(gaussian_norm_data_no_outliers, gaussian_norm_outliers)
-    
-    # Créer une instance de la classe NutriScore
-    nutriscore_calculator = NutriScore(final_data_no_outliers, grille, configs)
-    
-    # Appeler la méthode calcul_nutriscore sur l'instance de NutriScoreCalculator
-    nutriscore_no_outliers_nolabel = nutriscore_calculator.calcul_nutriscore()
-    nutriscore_no_outliers = nutriscore_calculator.set_scorelabel()
+try:
+    # Lire les informations de connexion depuis secrets.toml
+    secrets = toml.load('secrets.toml')
+    postgresql_config = secrets['connections']['postgresql']
 
-    return nutriscore_no_outliers
+    # Extraire les informations de connexion
+    db_host = postgresql_config['host']
+    db_name = postgresql_config['database']
+    db_user = postgresql_config['username']
+    db_password = postgresql_config['password']
+    db_port = postgresql_config['port']
 
-# Informations de connexion à la base de données PostgreSQL
-db_host = postgresql_config['host']
-db_name = postgresql_config['database']
-db_user = postgresql_config['username']
-db_password = postgresql_config['password']
-db_port = postgresql_config['port']
+    # Connexion à la base de données
+    logger.info("Connexion à la base de données PostgreSQL...")
+    conn = psycopg2.connect(
+        host=db_host,
+        database=db_name,
+        user=db_user,
+        password=db_password,
+        port=db_port
+    )
+    cur = conn.cursor()
 
-# Créer une connexion à la base de données PostgreSQL
-engine = create_engine(f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}')
-conn = engine.connect()
+    # Supprimer la table NS_noOutliers si elle existe
+    query_drop_table = 'DROP TABLE IF EXISTS "NS_noOutliers";'
+    logger.info("Suppression de la table 'NS_noOutliers' si elle existe...")
+    cur.execute(query_drop_table)
 
-# Read raw_recipes data from the database
-query = "SELECT * FROM raw_recipes"
-query_grille = "SELECT * FROM nutrient_table"
-df = pd.read_sql_query(query, conn)
-df_grille = pd.read_sql_query(query_grille, conn)
+    # Créer la table NS_noOutliers
+    query_create_table = '''
+    CREATE TABLE "NS_noOutliers" AS
+    SELECT 
+        NS.id, 
+        NS."dv_calories_%",
+        NS."dv_total_fat_%",
+        NS."dv_sugar_%",
+        NS."dv_sodium_%",
+        NS."dv_protein_%",
+        NS."dv_sat_fat_%",
+        NS."dv_carbs_%",
+        NS.nutriscore,
+        NS.label
+    FROM 
+        "NS_withOutliers" AS NS
+    INNER JOIN 
+        "nutrition_noOutliers" AS NO
+    ON 
+        NS.id = NO.id;
+    '''
+    logger.info("Création de la table 'NS_noOutliers'...")
+    cur.execute(query_create_table)
 
-# Close the database connection
-conn.close()
+    # Commit pour appliquer les changements
+    conn.commit()
 
-configs = {
-    'nutritioncolname': ['calories', 'total_fat_%', 'sugar_%', 'sodium_%', 'protein_%', 'sat_fat_%', 'carbs_%'],
-    'grillecolname': ['dv_calories_%', 'dv_sat_fat_%', 'dv_sugar_%', 'dv_sodium_%', 'dv_protein_%'],
-    'dv_calories': 2000
-}
+    # Lire les données de la table dans un DataFrame
+    query_select = 'SELECT * FROM "NS_noOutliers";'
+    logger.info("Lecture des données de la table 'NS_noOutliers'...")
+    df_nutriscore_no_outliers = pd.read_sql_query(query_select, conn)
 
-df_nutriscore_no_outliers = calcul_nutriscore_no_outliers(df, df_grille, configs)
-print(df_nutriscore_no_outliers)
-print(df_nutriscore_no_outliers.shape)
-df_nutriscore_no_outliers.info()
-print(df_nutriscore_no_outliers.describe())
+    # Afficher un aperçu des données
+    logger.info(f"Table 'NS_noOutliers' chargée avec {df_nutriscore_no_outliers.shape[0]} lignes.")
+    print(df_nutriscore_no_outliers.head())
 
-# Save the NutriScore + Labels data to the database
-nutriscore_calculator = NutriScore(df_nutriscore_no_outliers, df_grille, configs)
-nutriscore_calculator.stock_database()
+    # Afficher des informations sur le DataFrame
+    logger.info("Affichage des informations sur le DataFrame :")
+    print(df_nutriscore_no_outliers.info())
+    print(df_nutriscore_no_outliers.describe())
+
+except Exception as e:
+    logger.error(f"Une erreur s'est produite : {e}")
+finally:
+    # Fermeture de la connexion à la base de données
+    if 'cur' in locals():
+        cur.close()
+    if 'conn' in locals():
+        conn.close()
+    logger.info("Connexion à la base de données fermée.")
