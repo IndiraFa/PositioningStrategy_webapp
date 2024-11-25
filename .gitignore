@@ -157,6 +157,9 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+#secrets file for Cloud
+.toml
+
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
@@ -174,7 +177,3 @@ NS_no_outliers.png
 NS_with_outliers.png
 
 get_dataset_withlabels.py
-tests/tags/explodetags_old.csv
-tests/tags/explodetags.csv
-tests/tags/test.py
-tests/tags/testpage.py
