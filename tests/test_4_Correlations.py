@@ -131,6 +131,8 @@ def test_main(
         mock_filtered_data,
         mock_interaction_data,
         mock_nutriscore_data,
+        None,
+        None,
         None
     )
     correlations.main()
