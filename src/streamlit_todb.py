@@ -13,7 +13,10 @@ configs_db = {
 def fetch_data_from_db(configs_db,
                        query1=None,
                        query2=None,
-                       query3=None, query4=None
+                       query3=None, 
+                       query4=None,
+                       query5=None,
+                       query6=None,
 ):
     """
     Connect to the database, execute queries, and fetch data into DataFrames.
