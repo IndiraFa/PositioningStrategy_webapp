@@ -60,7 +60,34 @@ def fetch_data_from_db(configs_db,
         st.error("An error occurred while connecting to the database")
         return None, None, None, None
     
+def fetch_data_from_db_v2(query):
+    """
+    Connect to the database, execute a query, and fetch data into a DataFrame.
 
+    Parameters:
+    - configs_db: dict, the database configurations
+    - query: str, the SQL query
+
+    Returns:
+    - data: DataFrame, the result of the query
+    """
+    try:
+        conn = psycopg2.connect(
+            host=configs_db["db_host"],
+            port=configs_db["db_port"],
+            user=configs_db["db_user"],
+            password=configs_db["db_password"],
+            dbname=configs_db["db_name"]
+        )
+
+        data = pd.read_sql_query(query, conn)
+
+        conn.close()
+        return data
+
+    except Exception as e:
+        st.error("An error occurred while connecting to the database")
+        return None
 def main():
     query1 = """
     SELECT 
