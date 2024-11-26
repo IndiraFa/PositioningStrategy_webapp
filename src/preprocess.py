@@ -249,30 +249,40 @@ class Preprocessing:
             db_port = postgresql_config['port'] 
 
             # Créer une connexion à la base de données PostgreSQL
-            engine = create_engine(f'postgresql://{db_user}:{db_password}@
-                                   {db_host}:{db_port}/{db_name}')
+            engine = create_engine(
+                f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/'
+                f'{db_name}'
+            )
             conn = engine.connect()
 
             # Store the formatted data in the database
-            self.formatdata.to_sql('Formatted_data', conn,
-                                    if_exists='replace',index=False)
+            self.formatdata.to_sql(
+                'Formatted_data', conn, if_exists='replace',index=False
+            )
             # Store normalized data in the database
-            self.normaldata.to_sql('nutrition_withOutliers', conn, 
-                                   if_exists='replace', index=False)
+            self.normaldata.to_sql(
+                'nutrition_withOutliers', conn, if_exists='replace',
+                  index=False
+            )
             # Store finalDF_noOutliers from Denormalisation(self, 
             # DF_noOutliers, DF_outliers) in the database
-            self.denormalizedata.to_sql('nutrition_noOutliers', conn,
-                                    if_exists='replace', index=False)
+            self.denormalizedata.to_sql(
+                'nutrition_noOutliers', conn, if_exists='replace',
+                  index=False
+            )
             # Store finalDF_outliers from Denormalisation(self,
             #  DF_noOutliers, DF_outliers) in the database
-            self.denormalized_outliers.to_sql('outliers', conn,
-                                    if_exists='replace', index=False)
+            self.denormalized_outliers.to_sql(
+                'outliers', conn, if_exists='replace', index=False
+            )
             # Store the gaussian normalized data in the database
-            self.gaussiandata.to_sql('gaussian_norm_data', conn,
-                                    if_exists='replace', index=False)
+            self.gaussiandata.to_sql(
+                'gaussian_norm_data', conn, if_exists='replace', index=False
+            )
             # Store the prefiltered data in the database
-            self.prefiltredata.to_sql('prefiltre_data', conn,
-                                    if_exists='replace', index=False)
+            self.prefiltredata.to_sql(
+                'prefiltre_data', conn, if_exists='replace', index=False
+            )
 
             # Close the database connection
             conn.close()
@@ -290,8 +300,9 @@ def main():
     db_port = postgresql_config['port']
 
     # Créer une connexion à la base de données PostgreSQL
-    engine = create_engine(f'postgresql://{db_user}:{db_password}@{db_host}:
-                           {db_port}/{db_name}')
+    engine = create_engine(
+        f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
+    )
     conn = engine.connect()
     
     # Read raw_recipes data from the database

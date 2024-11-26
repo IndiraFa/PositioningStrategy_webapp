@@ -6,18 +6,16 @@ import streamlit as st
 import toml
 import psycopg2
 import logging
+
+#allows to import packages from the parent folder
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from streamlit_todb import fetch_data_from_db, configs_db
 
-
-# Add the directory containing preprocess.py to the PYTHONPATH
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Set the page layout to wide
 st.set_page_config(layout="wide")
 
-# Read connection information from secrets.toml
-secrets = toml.load('secrets.toml')
-postgresql_config = secrets['connections']['postgresql']
 
 def main():
     formatted_data, raw_data, normalized_data, outliers_data, \
