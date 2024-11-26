@@ -38,7 +38,7 @@ db_url = f"postgresql://{db_username}:{db_password}@{db_host}:{db_port}/{db_data
 #     query = "SELECT * FROM your_table LIMIT 10;"
 #     df = pd.read_sql(query, connection)
 
-
+@st.cache_data
 # set path to the root folder
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PARENT_DIR = os.path.dirname(CURRENT_DIR)

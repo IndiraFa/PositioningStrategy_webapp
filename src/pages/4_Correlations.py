@@ -313,12 +313,13 @@ def display_interaction_correlation(interaction_data, nutriscore_data):
 
 
 def main():
-    filtered_data, interaction_data, nutriscore_data, _ = get_cached_data(
-        configs_db,
-        query1,
-        query2,
-        query3
-    )
+    filtered_data, interaction_data, nutriscore_data, _, _, _ = \
+        get_cached_data(
+            configs_db,
+            query1,
+            query2,
+            query3
+        )
     display_header()
     "---"
     display_recipe_correlation(filtered_data)
