@@ -60,6 +60,8 @@ class DataPreprocessing:
         - merged_data: DataFrame, the merged data.
         """
         return pd.merge(raw_data, nutriscore_data, on='id')
+
+
     def filter_columns(self, merged_data, columns_to_keep):
         """
         Filter the merged data to keep only the specified columns.
@@ -131,6 +133,8 @@ class LinearRegressionNutrition:
         )
         intercept = model.intercept_
         return mse, r2, intercept, coefficients, y_test, y_pred
+
+      
     def plot_linear_regression(self, y_test, y_pred):
         """
         Plots the actual vs predicted values of the target variable.
@@ -157,6 +161,8 @@ class LinearRegressionNutrition:
         plt.legend()
         plt.grid(True)
         return plt.show(block=False)
+
+      
     def bootstrap_confidence_interval(
             self,
             num_bootstrap_samples=1000,
@@ -183,6 +189,7 @@ class LinearRegressionNutrition:
         for _ in range(num_bootstrap_samples):
             # Rééchantillonner les données avec remplacement
             bootstrap_sample = resample(self.data)
+
             # Séparer les features et la variable cible
             X_bootstrap = bootstrap_sample[self.features]
             y_bootstrap = bootstrap_sample[self.target]

@@ -13,7 +13,10 @@ configs_db = {
 def fetch_data_from_db(configs_db,
                        query1=None,
                        query2=None,
-                       query3=None, query4=None
+                       query3=None, 
+                       query4=None,
+                       query5=None,
+                       query6=None,
 ):
     """
     Connect to the database, execute queries, and fetch data into DataFrames.
@@ -24,6 +27,8 @@ def fetch_data_from_db(configs_db,
     - query2: str, optional, the second SQL query
     - query3: str, optional, the third SQL query
     - query4: str, optional, the fourth SQL query
+    - query5: str, optional, the fifth SQL query
+    - query6: str, optional, the sixth SQL query
     Returns:
     - data1: DataFrame, the result of the first query (or None if not provided)
     - data2: DataFrame, the result of the second query (or None if not 
@@ -31,6 +36,8 @@ def fetch_data_from_db(configs_db,
     - data3: DataFrame, the result of the third query (or None if not provided)
     - data4: DataFrame, the result of the fourth query (or None if not 
     provided)
+    - data5: DataFrame, the result of the fifth query (or None if not provided)
+    - data6: DataFrame, the result of the sixth query (or None if not provided)
     """
     try:
         conn = psycopg2.connect(
@@ -47,18 +54,20 @@ def fetch_data_from_db(configs_db,
         data2 = pd.read_sql_query(query2, conn) if query2 else None
         data3 = pd.read_sql_query(query3, conn) if query3 else None
         data4 = pd.read_sql_query(query4, conn) if query4 else None
+        data5 = pd.read_sql_query(query5, conn) if query5 else None
+        data6 = pd.read_sql_query(query6, conn) if query6 else None
 
         # logger.info("Successfully read the data from the database")
 
         conn.close()
         # logger.info("Connection to the database closed")
 
-        return data1, data2, data3, data4
+        return data1, data2, data3, data4, data5, data6
 
     except Exception as e:
         # logger.error(f"An error occurred: {e}")
         st.error("An error occurred while connecting to the database")
-        return None, None, None, None
+        return None, None, None, None, None, None
     
 def fetch_data_from_db_v2(query):
     """

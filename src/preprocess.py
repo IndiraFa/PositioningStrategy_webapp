@@ -2,13 +2,23 @@ import sys
 import os
 import pandas as pd
 import re
-from tabulate import tabulate
 from sqlalchemy import create_engine
 import toml
 
-# Lire les informations de connexion depuis secrets.toml
-secrets = toml.load('secrets.toml')
-postgresql_config = secrets['connections']['postgresql']
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+
+#Define the configuration for the data preprocessing
+configs = {
+    'nutritioncolname': 
+    ['calories', 'total_fat_%', 'sugar_%',
+        'sodium_%', 'protein_%', 'sat_fat_%', 'carbs_%'],
+    'grillecolname': 
+    ['dv_calories_%', 'dv_sat_fat_%', 'dv_sugar_%',
+        'dv_sodium_%', 'dv_protein_%'],
+    'dv_calories': 2000
+}
+
 
 class Datatools:
     @staticmethod
@@ -106,10 +116,7 @@ class Preprocessing:
 
     def prefiltrage(self):
         try:
-            # Pre-filter the data to remove extreme outliers
-            initial_count = len(self.normaldata)
-            print(f"Number of rows before pre-filtering: {initial_count}")
-
+            # Copy the normalized data for pre-filtering
             table_prefiltre = self.normaldata.copy()
 
             # Define thresholds for each column
@@ -123,20 +130,16 @@ class Preprocessing:
                 'dv_carbs_%': 5000
             }
 
-            # Identify and combine outliers for each column based on predefined thresholds
-            outliers = pd.concat([table_prefiltre[table_prefiltre[col] > threshold] for col, threshold in thresholds.items()]).drop_duplicates()
+            # Identify and combine outliers for each column based on 
+            # predefined thresholds
+            outliers = pd.concat([table_prefiltre[table_prefiltre[col] > \
+            threshold] for col, threshold in thresholds.items()])\
+                .drop_duplicates()
 
             # Filter out the visible outliers from different columns
             for col, threshold in thresholds.items():
-                table_prefiltre = table_prefiltre[table_prefiltre[col] <= threshold]
-
-            final_count = len(table_prefiltre)
-            print(f"Number of rows after pre-filtering: {final_count}")
-            print(
-                f"Number of outliers removed during pre-filtering: "
-                f"{initial_count - final_count}"
-            )
-            print("\n")
+                table_prefiltre = table_prefiltre[table_prefiltre[col]\
+                                                   <= threshold]
 
             # Store the outliers
             self.outliers = outliers
@@ -165,10 +168,6 @@ class Preprocessing:
         try:
             table_gauss = self.prefiltredata.copy()
             
-            initial_outliers_count = len(self.outliers)
-            print(f"Number of rows in the outliers DataFrame before processing: "
-                  f"{initial_outliers_count}")  # test unitaire
-
             # Apply Gaussian normalization to each column
             for col in gauss_configs['colname']:
                 mu = table_gauss[col].mean()
@@ -185,34 +184,18 @@ class Preprocessing:
             DF_noOutliers = table_gauss.copy()
             DF_outliers = self.outliers.copy()
 
-            print(
-                f"Size of DF_noOutliers before processing: "
-                f"{len(DF_noOutliers)}")  # test unitaire
-            print(
-                f"Size of Total_outliers before processing: "
-                f"{len(DF_outliers)}")  # test unitaire
-            print("\n")
 
             # Identify and remove outliers (values >= 3) for each column
             for col in DF_noOutliers.columns:
                 if col == 'id':
                     continue
                 col_outliers = DF_noOutliers[DF_noOutliers[col] >= 3]
-                print(
-                    f"Number of outliers found in column {col}: "
-                    f"{len(col_outliers)}")
+
                 DF_outliers = pd.concat([DF_outliers, col_outliers])
                 DF_noOutliers = DF_noOutliers[DF_noOutliers[col] < 3].copy()
 
             # Store the new outliers
             self.outliers = DF_outliers.drop_duplicates()
-
-            print("\n")
-            print(
-                f"Size of DF_noOutliers after processing: "
-                f"{len(DF_noOutliers)}")  # test unitaire
-            print(f"Size of DF_outliers after processing: {len(DF_outliers)}")
-            print("\n")
 
             return DF_noOutliers, DF_outliers
         except KeyError as e:
@@ -234,7 +217,8 @@ class Preprocessing:
             # Combine the columns from grillecolname with 
             # dv_total_fat_% and dv_carbs_%
             columns_to_denormalize = (
-                self.configs['grillecolname'] + ['dv_total_fat_%', 'dv_carbs_%']
+                self.configs['grillecolname'] + ['dv_total_fat_%',
+                                                  'dv_carbs_%']
             )
             
             for col in columns_to_denormalize:
@@ -254,6 +238,9 @@ class Preprocessing:
             return pd.DataFrame()
         
     def SQL_database(self):
+        # Lire les informations de connexion depuis secrets.toml
+        secrets = toml.load('secrets.toml')
+        postgresql_config = secrets['connections']['postgresql']
         # Create a PostgreSQL database and store the preprocessed data
         try:
             # Informations de connexion à la base de données PostgreSQL
@@ -264,21 +251,40 @@ class Preprocessing:
             db_port = postgresql_config['port'] 
 
             # Créer une connexion à la base de données PostgreSQL
-            engine = create_engine(f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}')
+            engine = create_engine(
+                f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/'
+                f'{db_name}'
+            )
             conn = engine.connect()
 
             # Store the formatted data in the database
-            self.formatdata.to_sql('Formatted_data', conn, if_exists='replace', index=False)
+            self.formatdata.to_sql(
+                'Formatted_data', conn, if_exists='replace',index=False
+            )
             # Store normalized data in the database
-            self.normaldata.to_sql('nutrition_withOutliers', conn, if_exists='replace', index=False)
-            # Store finalDF_noOutliers from Denormalisation(self, DF_noOutliers, DF_outliers) in the database
-            self.denormalizedata.to_sql('nutrition_noOutliers', conn, if_exists='replace', index=False)
-            # Store finalDF_outliers from Denormalisation(self, DF_noOutliers, DF_outliers) in the database
-            self.denormalized_outliers.to_sql('outliers', conn, if_exists='replace', index=False)
+            self.normaldata.to_sql(
+                'nutrition_withOutliers', conn, if_exists='replace',
+                  index=False
+            )
+            # Store finalDF_noOutliers from Denormalisation(self, 
+            # DF_noOutliers, DF_outliers) in the database
+            self.denormalizedata.to_sql(
+                'nutrition_noOutliers', conn, if_exists='replace',
+                  index=False
+            )
+            # Store finalDF_outliers from Denormalisation(self,
+            #  DF_noOutliers, DF_outliers) in the database
+            self.denormalized_outliers.to_sql(
+                'outliers', conn, if_exists='replace', index=False
+            )
             # Store the gaussian normalized data in the database
-            self.gaussiandata.to_sql('gaussian_norm_data', conn, if_exists='replace', index=False)
+            self.gaussiandata.to_sql(
+                'gaussian_norm_data', conn, if_exists='replace', index=False
+            )
             # Store the prefiltered data in the database
-            self.prefiltredata.to_sql('prefiltre_data', conn, if_exists='replace', index=False)
+            self.prefiltredata.to_sql(
+                'prefiltre_data', conn, if_exists='replace', index=False
+            )
 
             # Close the database connection
             conn.close()
@@ -288,6 +294,9 @@ class Preprocessing:
 
 
 def main():
+    # Lire les informations de connexion depuis secrets.toml
+    secrets = toml.load('secrets.toml')
+    postgresql_config = secrets['connections']['postgresql']
     # Informations de connexion à la base de données PostgreSQL
     db_host = postgresql_config['host']
     db_name = postgresql_config['database']
@@ -296,7 +305,9 @@ def main():
     db_port = postgresql_config['port']
 
     # Créer une connexion à la base de données PostgreSQL
-    engine = create_engine(f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}')
+    engine = create_engine(
+        f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
+    )
     conn = engine.connect()
     
     # Read raw_recipes data from the database
@@ -305,12 +316,6 @@ def main():
     
     # Close the database connection
     conn.close()
-    
-    configs = {
-        'nutritioncolname': ['calories', 'total_fat_%', 'sugar_%', 'sodium_%', 'protein_%', 'sat_fat_%', 'carbs_%'],
-        'grillecolname': ['dv_calories_%', 'dv_sat_fat_%', 'dv_sugar_%', 'dv_sodium_%', 'dv_protein_%'],
-        'dv_calories': 2000
-    }
 
     # Create an instance of the Preprocessing class
     preprocessing_instance = Preprocessing(df, configs)
@@ -329,4 +334,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main() 
