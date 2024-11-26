@@ -13,7 +13,7 @@ from streamlit_todb import fetch_data_from_db, configs_db
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Set the page layout to wide
-st.set_page_config(layout="wide, centered")
+st.set_page_config(layout="wide")
 
 # Read connection information from secrets.toml
 secrets = toml.load('secrets.toml')
