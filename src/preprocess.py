@@ -5,6 +5,9 @@ import re
 from sqlalchemy import create_engine
 import toml
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+
 # Lire les informations de connexion depuis secrets.toml
 secrets = toml.load('secrets.toml')
 postgresql_config = secrets['connections']['postgresql']
@@ -329,4 +332,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()% 
+    main() 
