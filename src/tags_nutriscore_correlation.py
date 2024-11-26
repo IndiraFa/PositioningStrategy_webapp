@@ -8,6 +8,7 @@ from functools import reduce
 import scipy.stats as stats
 import psycopg2
 import toml
+from streamlit_todb import fetch_data_from_db_v2
 
 
 # logging
@@ -24,7 +25,7 @@ logging.basicConfig(
 )
 
 # Create a logger object
-logger = logging.getLogger("tags_logger")
+logger = logging.getLogger("tags_nutriscore_correlation")
 logger.info("tags processing")
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -37,8 +38,11 @@ class DatabaseTable:
         Initialize the CreateDatabaseTable class.
 
         Args:
-            data (DataFrame): The input dataset to create a table from.
-            table_name (str): The name of the table to create.
+        - table_name (str): The name of the table to create.
+        - toml_path (str): The path to the toml file containing 
+        the database configuration.
+        - data (DataFrame): The input dataset to create a table from.
+            
         """
         self.toml_path = toml_path
         self.postgresql_config = self.read_toml_file()
@@ -99,6 +103,16 @@ class DatabaseTable:
             logger.error(f"An error occurred: {e}")
             return None
 
+    def apply_streamlit_db(self):
+        """
+        Apply the streamlit database connection.
+
+        Returns:
+            DataFrame: The database table.
+        """
+        query = f'SELECT * FROM "{self.table_name}";'
+        data1 = fetch_data_from_db_v2(query)
+        return data1
 
 class Utils:
     """Utility class for various helper functions."""
@@ -280,18 +294,22 @@ def main(arg):
     # create test directory to save test output
     PARENT_DIR = os.path.dirname(CURRENT_DIR)
     dir_test = os.path.join(PARENT_DIR, 'tests/tags')
-    print(CURRENT_DIR)
+
+    # edit the path to the secrets.toml file
+    tom_path = os.path.join(CURRENT_DIR, '.streamlit', 'secrets.toml')
+
     # Before analyse tags, we need to load the dataset and extract tags from the dataset and save on new dataframe
     # load raw data
+    logger.info(f"Loading data from the database ...")
     # path = os.path.join(PARENT_DIR, 'dataset/RAW_recipes.csv')
-    # df_raw = pd.read_csv(path)
-    df_raw = DatabaseTable('raw_recipes', 'secrets.toml').request_table()
+    df_raw = pd.read_csv('/Users/phuongnguyen/Documents/cours_BGD_Telecom_Paris_2024/Kit_Big_Data/dataset/RAW_recipes.csv')
+    # df_raw = DatabaseTable('raw_recipes', tom_path).apply_streamlit_db()
+    print('raw', df_raw.shape)
 
     # load dataset no outlier
-    # df_nooutlier = pd.read_csv(os.path.join(PARENT_DIR,
-    #         'dataset/nutrition_table_nutriscore_no_outliers.csv'))
-    df_nooutlier = DatabaseTable('NS_noOutliers', 'secrets.toml').request_table()
-
+    df_nooutlier = pd.read_csv('/Users/phuongnguyen/Documents/cours_BGD_Telecom_Paris_2024/Kit_Big_Data/dataset/nutrition_table_nutriscore_no_outliers.csv')
+    # df_nooutlier = DatabaseTable('NS_noOutliers', tom_path).apply_streamlit_db()
+    print('nooutlier', df_nooutlier.shape)
 
     # if not os.path.exists(dir_test):
     #     os.makedirs(dir_test)
@@ -303,11 +321,14 @@ def main(arg):
     #         new_data_tags = PreprocessTags(df_raw).formatter_tags_data()
     #         new_data_tags.to_csv(new_tags_file, index=False, header=True)
     #     else:
-    #         # new_data_tags = pd.read_csv(new_tags_file)
-    new_data_tags = DatabaseTable('explodetags', 'secrets.toml').request_table()
+    new_data_tags = pd.read_csv('/Users/phuongnguyen/Documents/cours_BGD_Telecom_Paris_2024/Kit_Big_Data/dataset/explodetags.csv')
+    # new_data_tags = DatabaseTable(
+    #     'explodetags', 
+    #     tom_path
+    # ).apply_streamlit_db() # with raw recipes with outliers
+    print('new_data_tags', new_data_tags.shape)
 
-
-
+    logger.info(f"Get tags reference from user, there are {tags_reference}")
     # get recipes with tags target
     tags_instance = Tags(new_data_tags, tags_reference)
     ids_recipes_target = np.array(tags_instance.get_recipes_from_tags())
@@ -327,11 +348,18 @@ def main(arg):
         ids_recipes_target = pd.Series(ids_recipes_target.T) # convert to pandas series or to list of integer values
 
         # combine two tables to get recipes from tags target
-        raw_recipes_nutrition = df_raw.iloc[np.where(df_nooutlier.id.isin(df_raw.id))]
+        raw_recipes_nutrition = df_raw.iloc[np.where(df_nooutlier['id'].isin(df_raw['id']))]
         print('Shape of all tags without outliers:', raw_recipes_nutrition.shape)
         raw_recipes_nutrition['nutriscore'] = df_nooutlier['nutriscore']
         raw_recipes_nutrition['label'] = df_nooutlier['label']
-        recipes_tags = raw_recipes_nutrition.iloc[np.where(ids_recipes_target.isin(df_nooutlier.id))]
+        ids_common = ids_recipes_target[ids_recipes_target.isin(df_nooutlier['id'])]
+        print(ids_common)
+        # recipes_tags = raw_recipes_nutrition.iloc[ids_common]
+        recipes_tags = raw_recipes_nutrition[raw_recipes_nutrition['id'].isin(ids_common)]
+        print('result:', recipes_tags.head())
+
+        # recipes_tags_withoutlier = df_raw.iloc[np.where(ids_recipes_target.id.isin(df_raw.id))]
+
 
         # get highest score and top 3 scores
         top3scores = np.unique(recipes_tags['nutriscore'])[-3:]
@@ -340,21 +368,6 @@ def main(arg):
         # get recipes with highest score and top 3 scores
         recipes_highestscore = recipes_tags[recipes_tags['nutriscore'] == maxscore]
         # print('highest score:', recipes_highestscore)
-        # recipes_highestscore.to_csv(
-        #     Path(
-        #         dir_test,
-        #         f'out_highestscore.csv'),
-        #     index=False,
-        #     header=True)
-        # recipes_top3scores = recipes_tags[recipes_tags['nutriscore'].isin(
-        #     top3scores)]
-        # print('top3:', recipes_top3scores)
-        # recipes_top3scores.to_csv(
-        #     Path(
-        #         dir_test,
-        #         f'out_top3scores.csv'),
-        #     index=False,
-        #     header=True)
 
         # Prepare dataset for analysis
         ids_recipes_target = ids_recipes_target.astype(int)
