@@ -8,10 +8,6 @@ import toml
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 
-# Lire les informations de connexion depuis secrets.toml
-secrets = toml.load('secrets.toml')
-postgresql_config = secrets['connections']['postgresql']
-
 #Define the configuration for the data preprocessing
 configs = {
     'nutritioncolname': 
@@ -242,6 +238,9 @@ class Preprocessing:
             return pd.DataFrame()
         
     def SQL_database(self):
+        # Lire les informations de connexion depuis secrets.toml
+        secrets = toml.load('secrets.toml')
+        postgresql_config = secrets['connections']['postgresql']
         # Create a PostgreSQL database and store the preprocessed data
         try:
             # Informations de connexion à la base de données PostgreSQL
@@ -295,6 +294,9 @@ class Preprocessing:
 
 
 def main():
+    # Lire les informations de connexion depuis secrets.toml
+    secrets = toml.load('secrets.toml')
+    postgresql_config = secrets['connections']['postgresql']
     # Informations de connexion à la base de données PostgreSQL
     db_host = postgresql_config['host']
     db_name = postgresql_config['database']
