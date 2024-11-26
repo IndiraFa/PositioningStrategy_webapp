@@ -8,18 +8,17 @@ import toml
 import logging
 
 # Configure logging for debugging and tracking
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
-# Load database credentials from a TOML file
-secrets = toml.load('secrets.toml')
-postgresql_config = secrets['connections']['postgresql']
 
 class NutriScore:
     def __init__(self, data, grille, configs):
         self.data = data
         self.grille = grille
         self.configs = configs
-
 
         # Calculate NutriScore and assign labels
         self.nutriscore = self.calcul_nutriscore()
@@ -39,15 +38,22 @@ class NutriScore:
                 nutrient_values = data[nutrient].values
 
                 for i, grille_row in nutrient_grille.iterrows():
-                    prev_value = -np.inf if i == 0 else nutrient_grille[nutrient].iloc[i - 1]
+                    prev_value = -np.inf if i == 0 else \
+                                 nutrient_grille[nutrient].iloc[i - 1]
                     if np.isnan(grille_row[nutrient]):
-                        # Handle the last range where the upper limit is undefined
-                        mask = (-nutrient_values > prev_value) if nutrient == "dv_protein_%" else (nutrient_values > prev_value)
+                        # Handle the last range where the upper limit is 
+                        # undefined
+                        mask = (-nutrient_values > prev_value) if \
+                            nutrient == "dv_protein_%" else \
+                                (nutrient_values > prev_value)
                         data.loc[mask, 'nutriscore'] -= grille_row['points']
                         break
                     # Apply the NutriScore logic for valid ranges
-                    mask = (-nutrient_values > prev_value) & (-nutrient_values <= grille_row[nutrient]) if nutrient == "dv_protein_%" else \
-                           (nutrient_values > prev_value) & (nutrient_values <= grille_row[nutrient])
+                    mask = (-nutrient_values > prev_value) & \
+                        (-nutrient_values <= grille_row[nutrient]) if \
+                            nutrient == "dv_protein_%" else \
+                           (nutrient_values > prev_value) & \
+                            (nutrient_values <= grille_row[nutrient])
                     data.loc[mask, 'nutriscore'] -= grille_row['points']
 
         return data
@@ -56,14 +62,25 @@ class NutriScore:
         """Assign NutriScore labels (A-E) based on the calculated scores."""
         score = self.nutriscore
         if 'nutriscore' not in score.columns:
-            raise ValueError('The column "nutriscore" is missing from the dataframe.')
+            raise ValueError(
+                'The column "nutriscore" is missing from the dataframe.'
+            )
 
         # Assign labels based on score thresholds
         score['label'] = ''
         score.loc[score['nutriscore'] >= 12, 'label'] = 'A'
-        score.loc[(score['nutriscore'] >= 9) & (score['nutriscore'] < 12), 'label'] = 'B'
-        score.loc[(score['nutriscore'] >= 6) & (score['nutriscore'] < 9), 'label'] = 'C'
-        score.loc[(score['nutriscore'] >= 3) & (score['nutriscore'] < 6), 'label'] = 'D'
+        score.loc[
+            (score['nutriscore'] >= 9) & (score['nutriscore'] < 12),
+            'label'
+        ] = 'B'
+        score.loc[
+            (score['nutriscore'] >= 6) & (score['nutriscore'] < 9),
+            'label'
+        ] = 'C'
+        score.loc[
+            (score['nutriscore'] >= 3) & (score['nutriscore'] < 6),
+            'label'
+        ] = 'D'
         score.loc[score['nutriscore'] < 3, 'label'] = 'E'
         
         return score
@@ -76,13 +93,27 @@ class NutriScore:
                                    f'@{postgresql_config["host"]}:{postgresql_config["port"]}/{postgresql_config["database"]}')
             with engine.connect() as conn:
                 # Save the NutriScore data to the database
-                self.nutriscore_label.to_sql('NS_withOutliers', conn, if_exists='replace', index=False)
-                logging.info("NutriScore data successfully stored in the database.")
+                self.nutriscore_label.to_sql(
+                    'NS_withOutliers',
+                    conn,
+                    if_exists='replace',
+                    index=False
+                )
+                logging.info(
+                    "NutriScore data successfully stored in the database."
+                )
         except Exception as e:
             logging.error(f"Error storing data in the database: {e}")
 
 class Plot:
-    def __init__(self, data, title=None, xlabel=None, ylabel=None, output_path=None):
+    def __init__(
+            self,
+            data,
+            title=None,
+            xlabel=None,
+            ylabel=None,
+            output_path=None
+        ):
         self.data = data
         self.title = title
         self.xlabel = xlabel
@@ -110,37 +141,70 @@ class Plot:
         plt.show()
 
 def main():
-    """Main function to orchestrate data processing, NutriScore calculation, and visualization."""
+    """Main function to orchestrate data processing, NutriScore calculation, 
+    and visualization.
+    """
+    # Load database credentials from a TOML file
+    secrets = toml.load('secrets.toml')
+    postgresql_config = secrets['connections']['postgresql']
     try:
         # Connect to the PostgreSQL database
-        engine = create_engine(f'postgresql://{postgresql_config["username"]}:{postgresql_config["password"]}'
+        engine = create_engine(
+            f'postgresql://{postgresql_config["username"]}:{postgresql_config["password"]}'
                                f'@{postgresql_config["host"]}:{postgresql_config["port"]}/{postgresql_config["database"]}')
         with engine.connect() as conn:
             # Load data from the database
             df = pd.read_sql_query("SELECT * FROM raw_recipes", conn)
             df_grille = pd.read_sql_query("SELECT * FROM nutrient_table", conn)
-            df_normalized_data = pd.read_sql_query('SELECT * FROM "nutrition_withOutliers"', conn)
+            df_normalized_data = pd.read_sql_query(
+                'SELECT * FROM "nutrition_withOutliers"',
+                conn
+            )
 
         # Configuration for the NutriScore calculation
         configs = {
             'nutritioncolname': [
-                'calories', 'total_fat_%', 'sugar_%', 'sodium_%', 'protein_%', 'sat_fat_%', 'carbs_%'
+                'calories',
+                'total_fat_%',
+                'sugar_%',
+                'sodium_%',
+                'protein_%',
+                'sat_fat_%',
+                'carbs_%'
             ],
             'grillecolname': [
-                'dv_calories_%', 'dv_sat_fat_%', 'dv_sugar_%', 'dv_sodium_%', 'dv_protein_%'
+                'dv_calories_%',
+                'dv_sat_fat_%',
+                'dv_sugar_%',
+                'dv_sodium_%',
+                'dv_protein_%'
             ],
             'dv_calories': 2000
         }
 
         # Calculate NutriScore and store results in the database
-        nutri_score_instance = NutriScore(df_normalized_data, df_grille, configs)
+        nutri_score_instance = NutriScore(
+            df_normalized_data,
+            df_grille,
+            configs
+        )
         nutri_score_instance.stock_database()
 
         # Generate and save distribution plots
-        Plot(nutri_score_instance.nutriscore['nutriscore'], title='NutriScore Distribution',
-             xlabel='NutriScore', ylabel='Number of Recipes', output_path='nutriscore_distribution.png').plot_distribution()
-        Plot(nutri_score_instance.nutriscore_label['label'], title='NutriScore Label Distribution',
-             xlabel='Labels', ylabel='Number of Recipes', output_path='nutriscore_label_distribution.png').plot_distribution_label(labels=['A', 'B', 'C', 'D', 'E'])
+        Plot(
+            nutri_score_instance.nutriscore['nutriscore'],
+            title='NutriScore Distribution',
+            xlabel='NutriScore',
+            ylabel='Number of Recipes',
+            output_path='nutriscore_distribution.png'
+        ).plot_distribution()
+        Plot(
+            nutri_score_instance.nutriscore_label['label'],
+            title='NutriScore Label Distribution',
+            xlabel='Labels',
+            ylabel='Number of Recipes',
+            output_path='nutriscore_label_distribution.png'
+        ).plot_distribution_label(labels=['A', 'B', 'C', 'D', 'E'])
     except Exception as e:
         logging.error(f"Error in the main program: {e}")
 
