@@ -302,13 +302,13 @@ def main(arg):
     # load raw data
     logger.info(f"Loading data from the database ...")
     # path = os.path.join(PARENT_DIR, 'dataset/RAW_recipes.csv')
-    df_raw = pd.read_csv('/Users/phuongnguyen/Documents/cours_BGD_Telecom_Paris_2024/Kit_Big_Data/dataset/RAW_recipes.csv')
-    # df_raw = DatabaseTable('raw_recipes', tom_path).apply_streamlit_db()
+    # df_raw = pd.read_csv('/Users/phuongnguyen/Documents/cours_BGD_Telecom_Paris_2024/Kit_Big_Data/dataset/RAW_recipes.csv')
+    df_raw = DatabaseTable('raw_recipes', tom_path).apply_streamlit_db()
     print('raw', df_raw.shape)
 
     # load dataset no outlier
-    df_nooutlier = pd.read_csv('/Users/phuongnguyen/Documents/cours_BGD_Telecom_Paris_2024/Kit_Big_Data/dataset/nutrition_table_nutriscore_no_outliers.csv')
-    # df_nooutlier = DatabaseTable('NS_noOutliers', tom_path).apply_streamlit_db()
+    # df_nooutlier = pd.read_csv('/Users/phuongnguyen/Documents/cours_BGD_Telecom_Paris_2024/Kit_Big_Data/dataset/nutrition_table_nutriscore_no_outliers.csv')
+    df_nooutlier = DatabaseTable('NS_noOutliers', tom_path).apply_streamlit_db()
     print('nooutlier', df_nooutlier.shape)
 
     # if not os.path.exists(dir_test):
@@ -321,11 +321,11 @@ def main(arg):
     #         new_data_tags = PreprocessTags(df_raw).formatter_tags_data()
     #         new_data_tags.to_csv(new_tags_file, index=False, header=True)
     #     else:
-    new_data_tags = pd.read_csv('/Users/phuongnguyen/Documents/cours_BGD_Telecom_Paris_2024/Kit_Big_Data/dataset/explodetags.csv')
-    # new_data_tags = DatabaseTable(
-    #     'explodetags', 
-    #     tom_path
-    # ).apply_streamlit_db() # with raw recipes with outliers
+    # new_data_tags = pd.read_csv('/Users/phuongnguyen/Documents/cours_BGD_Telecom_Paris_2024/Kit_Big_Data/dataset/explodetags.csv')
+    new_data_tags = DatabaseTable(
+        'explodetags', 
+        tom_path
+    ).apply_streamlit_db() # with raw recipes with outliers
     print('new_data_tags', new_data_tags.shape)
 
     logger.info(f"Get tags reference from user, there are {tags_reference}")
