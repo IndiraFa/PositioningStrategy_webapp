@@ -24,7 +24,6 @@ class NutriScore:
         self.nutriscore = self.calcul_nutriscore()
         self.nutriscore_label = self.set_scorelabel()
 
-
     def calcul_nutriscore(self):
         """Calculate the NutriScore for each row in the dataset."""
         data = self.data.copy()
@@ -87,6 +86,8 @@ class NutriScore:
 
     def stock_database(self):
         """Store the NutriScore data in a PostgreSQL database."""
+        secrets = toml.load('secrets.toml')
+        postgresql_config = secrets['connections']['postgresql']
         try:
             # Establish a database connection
             engine = create_engine(f'postgresql://{postgresql_config["username"]}:{postgresql_config["password"]}'
@@ -104,6 +105,7 @@ class NutriScore:
                 )
         except Exception as e:
             logging.error(f"Error storing data in the database: {e}")
+
 
 class Plot:
     def __init__(
@@ -139,6 +141,7 @@ class Plot:
         ax.set_ylabel(self.ylabel)
         plt.savefig(self.output_path)
         plt.show()
+
 
 def main():
     """Main function to orchestrate data processing, NutriScore calculation, 
@@ -207,6 +210,7 @@ def main():
         ).plot_distribution_label(labels=['A', 'B', 'C', 'D', 'E'])
     except Exception as e:
         logging.error(f"Error in the main program: {e}")
+
 
 if __name__ == "__main__":
     main()
