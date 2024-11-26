@@ -68,6 +68,7 @@ sphinxcontrib-jquery==4.1
 sphinxcontrib-jsmath==1.0.1
 sphinxcontrib-qthelp==2.0.0
 sphinxcontrib-serializinghtml==2.0.0
+SQLAlchemy==2.0.36
 streamlit==1.39.0
 tenacity==9.0.0
 threadpoolctl==3.5.0
