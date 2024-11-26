@@ -4,6 +4,7 @@ import logging
 import streamlit as st
 import pandas as pd
 import numpy as np
+from pathlib import Path
 import scipy.stats as stats
 import plotly.express as px
 from PIL import Image
@@ -40,9 +41,10 @@ db_url = f"postgresql://{db_username}:{db_password}@{db_host}:{db_port}/{db_data
 
 # @st.cache_data
 # set path to the root folder
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-PARENT_DIR = os.path.dirname(CURRENT_DIR)
-dir_test = os.path.join(os.path.dirname(PARENT_DIR), 'tests/tags')
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# PARENT_DIR = os.path.dirname(CURRENT_DIR)
+# dir_test = os.path.join(os.path.dirname(PARENT_DIR), 'tests/tags')
+current_dir = Path.cwd()
 
 st.set_page_config(layout="wide")
 st.markdown(
@@ -68,7 +70,7 @@ st.text("---------------------------------")
 left, right = st.columns([0.6, 0.4])
 with right:
     # st.pyplot(plt)
-    img = Image.open(os.path.join(CURRENT_DIR,'tagscloud.png'))
+    img = Image.open(Path(current_dir,'pages','tagscloud.png'))
     st.image(img, 
             caption='Word cloud of tags', use_column_width=True)
 
@@ -87,7 +89,7 @@ with left:
 
 
     # get the tags from the user
-    options = ['low carb', 'low protein', 'course', 'vegetarian', 'other']
+    options = ['low carb', 'low protein', 'course', 'vegetarian', 'main ingredient', 'other']
     selected_options = st.multiselect(
         'Select one or many options. Choose other if you want to entry manually', options
     )
