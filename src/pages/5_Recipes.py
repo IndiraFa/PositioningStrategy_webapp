@@ -25,170 +25,134 @@ logging.basicConfig(
 # Create a logger object
 logger = logging.getLogger("app_logger")
 logger.info("App tags")
-# charger les informations de connexion à partir de secrets.toml
-db_host = st.secrets["connections"]["postgresql"]["host"]
-db_database = st.secrets["connections"]["postgresql"]["database"]
-db_username = st.secrets["connections"]["postgresql"]["username"]
-db_password = st.secrets["connections"]["postgresql"]["password"]
-db_port = st.secrets["connections"]["postgresql"]["port"]
-db_url = f"postgresql://{db_username}:{db_password}@{db_host}:{db_port}/{db_database}"
 
-# Create a connection to the database
-# engine = create_engine(db_url)
-# with engine.connect() as connection:
-#     query = "SELECT * FROM your_table LIMIT 10;"
-#     df = pd.read_sql(query, connection)
 
-# @st.cache_data
 # set path to the root folder
 current_dir = os.path.dirname(os.path.abspath(__file__))
 # PARENT_DIR = os.path.dirname(CURRENT_DIR)
 # dir_test = os.path.join(os.path.dirname(PARENT_DIR), 'tests/tags')
 current_dir = Path.cwd()
 
-st.set_page_config(layout="centered")
-st.markdown(
-        "<h1 style='color:purple; text-align: center;'>Tag analysis</h1>",
-        unsafe_allow_html=True
-    )
-# st.title("Tag analysis")
-st.markdown( 
-    """
-    <div style="text-align: center;">
-    This tab is dedicated to searching for recipes with one or more specific tags. 
-    They are keywords that designate the nature or type, or the main method of the recipes, 
-    for example: 'vegetarian', 'dinner', 'course' (see the word cloud below).
-    The analysis of the labels allows to understand the correlation between the tags and 
-    the nutriscore of the recipes. So you can choose your satisfied recipes below our studies."
-    </div>
-    """,
-    unsafe_allow_html=True  
-)
-
-st.markdown("""-----------------------------------""", unsafe_allow_html=True)
-
-left, right = st.columns([0.4, 0.6])
-with right:
-    img = Image.open(Path(current_dir,'pages','tagscloud.png'))
-    st.image(img, 
-            caption='Word cloud of tags', use_column_width=True)
-
-with left:
-    # st.markdown(
-    #     """ 
-    #     <div style="text-align: justify;">
-    #     We invite you to choose one or more tags that interest you in order
-    #     to obtain information on the associated recipes and their nutriscore. 
-    #     You can also manually enter your tags if you cannot find your tag 
-    #     in the proposed list.
-    #     </div>
-    #     """,
-    #     unsafe_allow_html=True
-    # )   
-
-
-    # get the tags from the user
-    options = ['low carb', 'low protein', 'course', 'vegetarian', 'main ingredient', 'other']
-    st.markdown(
-        "<p style='font-size:12px;'>"
-        "<i>Select one or many options. Choose other if you want to entry manually</i></p>",
-        unsafe_allow_html=True
-    )
-    selected_options = st.multiselect(
-        '', options
-    )
-
-    if ('other' in selected_options):
-        custom_input = st.text_input('Entry your tags here (using only comma to separate tags):')
-        st.write(f'_You entered_: {custom_input}')
-        tags_input = custom_input
+def display_top10recipes(all_recipes, highest_recipes, tags_input, label_choice='A'):
+    if all_recipes.shape[0] > 0:
+        st.markdown(
+            f"Top 10 recipes randomly with <span style='color:blue;'>{tags_input}</span> having highest nutriscore:",
+            unsafe_allow_html=True
+        )
+        st.dataframe(highest_recipes[['name','nutriscore','label','tags']].head(10), hide_index=True)
+        st.markdown(f"""
+                    <div style="text-align: right;"><i>
+                    {all_recipes.shape[0]} recipes in total
+                    </i></div>""", 
+                    unsafe_allow_html=True)
     else:
-        tags_input = ', '.join(selected_options)
-        st.write(f'There are your {len(selected_options)} tags: {selected_options}')
+        st.write('No recipe found with these tags')
+
+def display_datatable(all_recipes, label_choice='A'):
+    df_choix = all_recipes[all_recipes['label'] == label_choice]
+    st.dataframe(df_choix[['name','nutriscore','label','tags']], hide_index=True)
+    # st.markdown(
+    #     f"""<div style="text-align: right;"><i>
+    #     {all_recipes.shape[0]} recipes in total
+    #     </i></div>
+    #     """, 
+    #                 unsafe_allow_html=True)
+
+def display_choosing_labels(all_recipes_proccessed, all_recipes):
+    st.markdown(
+            """
+            <div style="text-align: justify;">
+            This section is used to study the statistical description of the recipes with the selected label.\n
+            You can choose one label to study and see the top 10 recipes having this label.
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    
+    col1, col2 = st.columns([0.7, 0.3])
+    with col2:
+        labels = ['A', 'B', 'C', 'D', 'E'] 
+        st.markdown(
+            "<p style='font-size:14px;'>"
+            "<i>Select specially 1 label that you want to study</i></p>",
+            unsafe_allow_html=True
+        )
+        choix = st.radio('', labels, index=0)
+        if choix :
+            with col1: 
+                display_datatable(all_recipes, choix)
+                st.write('...')
+        
+    # st.markdown(f'Statistical description of the recipes with the {choix} label')
+    txt = st.warning(f'Statistical description of the recipes with the {choix} label') 
+    df_choix = all_recipes_proccessed[all_recipes_proccessed['label'] == choix]
+    col11, col12 = st.columns([0.5, 0.5])
+    with col11:
+        dfsort_stats = display_statistical_description(df_choix, choix)
+    with col12:
+        display_pie_chart(dfsort_stats)
+                
+def display_statistical_description(all_recipes_proccessed, choix):
+    df_choix = all_recipes_proccessed[all_recipes_proccessed['label'] == choix]
+    df_choix.rename(columns={'dv_calories_%':'calories', 
+                            'dv_protein_%':'protein',
+                            'dv_sat_fat_%':'satured fat',
+                            'dv_total_fat_%':'total fat',
+                            'dv_carbs_%':'carbohydrates',
+                            'dv_sugar_%':'sugar',
+                            'dv_sodium_%':'sodium'
+                            }, inplace=True)
+    
+    # st.markdown(f"The number of recipes with the {choix} label is {df_choix.shape[0]}"
+    #         "\nNow the statistical description of these recipes is:")
+    
+    dfsort_stats = df_choix.drop(columns=['id', 'name', 'label']).describe().T[['mean','std','min','max']]
+    st.table(dfsort_stats.round(2))
+    # st.write(f'And top 10 recipes having {choix} label and tags selected')
+    # st.dataframe(df_choix[['name', 'nutriscore']].head(10), hide_index=True)
+    return dfsort_stats
+
+def display_pie_chart(dfsort_stats):
+    dfsort_stats = dfsort_stats.drop('nutriscore', axis=0)
+    fig = px.pie(
+        dfsort_stats, values='mean', names=dfsort_stats.index, 
+        title='Nutrition distribution of the recipes with the selected label',
+        color=dfsort_stats.index)    
+    fig.update_layout(legend_title_text='Nutrition',
+                    legend=dict(orientation="v", yanchor="bottom", y=0.2, xanchor="center", x=0.2),
+                    )
+    st.plotly_chart(fig)
+
+def select_to_process(all_recipes, all_recipes_proccessed, highest_recipes, tags_input):
+
+    if tags_input: 
+        try:
+            # all_recipes, all_recipes_proccessed, highest_recipes = tags_nutriscore_correlation.main(tags_input)
+            display_boxplot(all_recipes, tags_input)
+            # col1, col2 = st.columns([0.7, 0.3])
+            # with col1:
+            #     display_top10recipes(all_recipes, highest_recipes, tags_input)
+            # with col2:
+            #     display_choosing_labels(all_recipes_proccessed)
+            #     st.write('...')
+                
             
-
-#-------------------------------------------------
-# config color map for pie chart after processing tags
-color_map = {
-    'A': '#1c682c',
-    'B': '#3cb455',
-    'C': '#f1c232',
-    'D': '#e69138',
-    'E': '#f44336'
-}
-
-st.subheader(f"Visualisation of the recipes with {selected_options}")
-
-if tags_input: 
-    try:
-        all_recipes, all_recipes_proccessed, highest_recipes = tags_nutriscore_correlation.main(tags_input)
-        # divide the streamlit page into two columns
-        col1, col2 = st.columns(2)
-        with col1:
-        # this column will be used to display the results
-        #-------------------------------------------------
-            if all_recipes.shape[0] > 0:
-                st.markdown(f'Top 10 recipes randomly with **{tags_input}** having highest nutriscore:')
-                st.dataframe(highest_recipes[['name','nutriscore','label']].head(10), hide_index=True)
-                st.markdown(f'<div style="text-align: right;"><i>{all_recipes.shape[0]} recipes in total</i></div>', 
-                            unsafe_allow_html=True)
-            else:
-                st.write('No recipe found with these tags')
-        with col2:
-            # boxplot 
-            fig = px.box(all_recipes, x='label', y='nutriscore', 
-                         title=f'<i>Boxplot of nutriscore of recipes having {selected_options} and their labels</i>',
-                         category_orders={'label': ['A', 'B', 'C', 'D', 'E']},
-                         width=500, height=400)
-            st.plotly_chart(fig)
-            # commentaire sur le boxplot
+            
             st.write('...')
 
-        st.subheader(f'Label study with {selected_options} in the recipes')
-        st.markdown('This section is used to ...', unsafe_allow_html=True)
+            st.subheader(f'Learning more with label study')
+            
+            display_choosing_labels(all_recipes_proccessed, all_recipes)
 
-        col1, col2 = st.columns(2)
-        with col1:
-            labels = ['A', 'B', 'C', 'D', 'E']
-            choix = st.radio('Select 1 label that you want to study:', labels)
-            df_choix = all_recipes_proccessed[all_recipes_proccessed['label'] == choix]
-            df_choix.rename(columns={'dv_calories_%':'calories', 
-                                     'dv_protein_%':'protein',
-                                     'dv_sat_fat_%':'satured fat',
-                                     'dv_total_fat_%':'total fat',
-                                     'dv_carbs_%':'carbohydrates',
-                                     'dv_sugar_%':'sugar',
-                                     'dv_sodium_%':'sodium'
-                                     }, inplace=True)
-            
-            # st.markdown(f"The number of recipes with the {choix} label is {df_choix.shape[0]}"
-            #         "\nNow the statistical description of these recipes is:")
-            
-            dfsort_stats = df_choix.drop(columns=['id', 'name', 'label']).describe().T[['mean','std','min','max']]
-            st.table(dfsort_stats.round(2))
-            st.write(f'And top 10 recipes having {choix} label and tags selected')
-            st.dataframe(df_choix[['name', 'nutriscore']].head(10), hide_index=True)
-
-        with col2:
-            
-            # this column will be used to display the plot of the results
-            dfsort_stats = dfsort_stats.drop('nutriscore', axis=0)
-            fig = px.pie(
-                dfsort_stats, values='mean', names=dfsort_stats.index, 
-                title='Nutrition distribution of the recipes with the selected label',
-                color=dfsort_stats.index)    
-            fig.update_layout(legend_title_text='Nutrition',
-                              legend=dict(orientation="v", yanchor="bottom", y=0.2, xanchor="center", x=0.2),
-                              )
-            st.plotly_chart(fig)
             st.write('...')
 
-        # st.dataframe(top3_recipes['name'])
-    except Exception as e:
-        st.write("An error occurred: ", e)
+            # st.dataframe(top3_recipes['name'])
+        except Exception as e:
+            st.write("An error occurred: ", e)
     
     #-----------------------------------------------------------------
     #-----------------------------------------------------------------
+def display_anova_test(all_recipes_proccessed):
     st.subheader("ANOVA TEST")
 
     st.markdown(
@@ -226,19 +190,124 @@ if tags_input:
         else:
             st.write("The p-value is greater than 0.05, we fail to reject the null hypothesis")
 
-st.text("---------------------------------")
-st.markdown(
-        "<h2 style='color:black; text-align: center;'>Conclusion</h2>",
+def display_conclusion():
+    st.text("---------------------------------")
+    st.markdown(
+            "<h2 style='color:black; text-align: center;'>Conclusion</h2>",
+            unsafe_allow_html=True
+        )
+    st.markdown(
+        """
+        <div style="text-align: justify;">
+        In this section, we have presented the analysis of the recipes with the selected tags. 
+        We have shown the top 10 recipes with the highest nutriscore and the statistical description of 
+        the recipes with the selected label. We have also performed the ANOVA test to compare the nutriscore 
+        of the selected labels. 
+        </div>
+        """,
         unsafe_allow_html=True
     )
-st.markdown(
+
+def display_header_intro(position='center'):
+    if position == 'center':
+        st.markdown(
+            "<h1 style='color:purple; text-align: center;'>Tag analysis</h1>",
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown(
+            f"<h1 style='color:purple; text-align: justify;'>Tag analysis</h1>",
+            unsafe_allow_html=True
+        )
+
+    st.markdown( 
+        """
+        <div style="text-align: center;">
+        This tab is dedicated to searching for recipes with one or more specific tags. 
+        They are keywords that designate the nature or type, or the main method of the recipes, 
+        for example: 'vegetarian', 'dinner', 'course' (see the word cloud below).
+        The analysis of the labels allows to understand the correlation between the tags and 
+        the nutriscore of the recipes. So you can choose your satisfied recipes below our studies."
+        </div>
+        """,
+        unsafe_allow_html=True  
+    )
+
+def display_tagscloud():
+    current_dir = os.path.dirname(__file__)
+    img_path = os.path.join(current_dir, "..", "tagscloud.png")
+    img = Image.open(img_path)
+    st.image(img, caption='Word cloud of tags', use_column_width=True)
+
+def display_select_tools():
     """
-    <div style="text-align: justify;">
-    In this section, we have presented the analysis of the recipes with the selected tags. 
-    We have shown the top 10 recipes with the highest nutriscore and the statistical description of 
-    the recipes with the selected label. We have also performed the ANOVA test to compare the nutriscore 
-    of the selected labels. 
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+    Display the select tools for the user to choose the tags
+    """
+    # get the tags from the user
+    options = ['low carb', 'low protein', 'course', 'vegetarian', 'main ingredient', 'other']
+    st.markdown(
+        "<p style='font-size:12px;'>"
+        "<i>Select one or many options. Choose other if you want to entry manually</i></p>",
+        unsafe_allow_html=True
+    )
+    selected_options = st.multiselect(
+        '', options
+    )
+
+    if ('other' in selected_options):
+        custom_input = st.text_input('Entry your tags here (using only comma to separate tags):')
+        st.write(f'_You entered_: {custom_input}')
+        tags_input = custom_input
+    else:
+        tags_input = ', '.join(selected_options)
+        st.write(f'There are your {len(selected_options)} tags: {tags_input}')  
+
+    
+    return tags_input
+
+def display_boxplot(all_recipes, tags_input):
+    """
+    Display the boxplot of the nutriscore & label of all recipes having the tags
+    """
+    fig = px.box(all_recipes, x='label', y='nutriscore', 
+            title=f"<i>Distribution of nutriscore of all recipes having <span style='background-color:purple';>{tags_input}</span> and their labels associated</i>",
+            category_orders={'label': ['A', 'B', 'C', 'D', 'E']},
+            width=500, height=400)
+    st.plotly_chart(fig, use_container_width=True)
+    st.markdown(
+        f"""<div style="text-align: right; font-size:12px"><i>
+        {all_recipes.shape[0]} recipes in total
+        </i></div>
+        """, 
+                    unsafe_allow_html=True)
+
+
+def main():
+    """
+    Main function to display the tags
+    """
+    # at beginning of the page
+    st.set_page_config(layout="centered")
+    
+
+    # setup introduction of page : header, tags cloud, select tools
+    display_header_intro(position='center')
+    left, right = st.columns([0.4, 0.6])
+    with right:
+        display_tagscloud()
+    with left:
+        tags_input = display_select_tools()
+    st.markdown("""-----------------------------------""", unsafe_allow_html=True)
+
+    # processing when tags are selected
+    all_recipes, all_recipes_proccessed, highest_recipes = tags_nutriscore_correlation.main(tags_input)
+    st.markdown(
+        f"<h2 style='text-align: center;'>Visualisation of the recipes with <span class='highlight :purple;'>{tags_input}</span></h2>",
+        unsafe_allow_html=True
+    )
+    select_to_process(all_recipes, all_recipes_proccessed, highest_recipes, tags_input)
+    # display_anova_test(all_recipes_proccessed)
+    display_conclusion()
+
+if __name__ == "__main__":
+    main()
