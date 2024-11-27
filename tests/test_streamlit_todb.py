@@ -50,7 +50,7 @@ def test_fetch_data_from_db(mock_read_sql_query, mock_connect, mock_data):
         "db_name": "test_database"
     }
 
-    data1, data2, data3, data4 = fetch_data_from_db(
+    data1, data2, data3, data4, _, _ = fetch_data_from_db(
         configs_db,
         query1,
         query2,
