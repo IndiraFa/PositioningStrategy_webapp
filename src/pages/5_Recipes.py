@@ -46,7 +46,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 # dir_test = os.path.join(os.path.dirname(PARENT_DIR), 'tests/tags')
 current_dir = Path.cwd()
 
-st.set_page_config(layout="wide")
+st.set_page_config(layout="centered")
 st.markdown(
         "<h1 style='color:purple; text-align: center;'>Tag analysis</h1>",
         unsafe_allow_html=True
@@ -54,54 +54,58 @@ st.markdown(
 # st.title("Tag analysis")
 st.markdown( 
     """
-    <div style="text-align: justify;">
-    This tab is dedicated to searching for recipes with one or more specific labels. 
+    <div style="text-align: center;">
+    This tab is dedicated to searching for recipes with one or more specific tags. 
     They are keywords that designate the nature or type, or the main method of the recipes, 
     for example: 'vegetarian', 'dinner', 'course' (see the word cloud below).
-    The analysis of the labels allows to understand the correlation between the labels and 
+    The analysis of the labels allows to understand the correlation between the tags and 
     the nutriscore of the recipes. So you can choose your satisfied recipes below our studies."
     </div>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True  
 )
 
-st.text("---------------------------------")
+st.markdown("""-----------------------------------""", unsafe_allow_html=True)
 
-left, right = st.columns([0.6, 0.4])
+left, right = st.columns([0.4, 0.6])
 with right:
-    # st.pyplot(plt)
     img = Image.open(Path(current_dir,'pages','tagscloud.png'))
     st.image(img, 
             caption='Word cloud of tags', use_column_width=True)
 
 with left:
-    st.markdown(
-        """ 
-        <div style="text-align: justify;">
-        We invite you to choose one or more tags that interest you in order
-        to obtain information on the associated recipes and their nutriscore. 
-        You can also manually enter your tags if you cannot find your tag 
-        in the proposed list.
-        </div>
-        """,
-        unsafe_allow_html=True
-    )   
+    # st.markdown(
+    #     """ 
+    #     <div style="text-align: justify;">
+    #     We invite you to choose one or more tags that interest you in order
+    #     to obtain information on the associated recipes and their nutriscore. 
+    #     You can also manually enter your tags if you cannot find your tag 
+    #     in the proposed list.
+    #     </div>
+    #     """,
+    #     unsafe_allow_html=True
+    # )   
 
 
     # get the tags from the user
     options = ['low carb', 'low protein', 'course', 'vegetarian', 'main ingredient', 'other']
+    st.markdown(
+        "<p style='font-size:12px;'>"
+        "<i>Select one or many options. Choose other if you want to entry manually</i></p>",
+        unsafe_allow_html=True
+    )
     selected_options = st.multiselect(
-        'Select one or many options. Choose other if you want to entry manually', options
+        '', options
     )
 
     if ('other' in selected_options):
         custom_input = st.text_input('Entry your tags here (using only comma to separate tags):')
-        st.write(f'You entered: {custom_input}')
+        st.write(f'_You entered_: {custom_input}')
         tags_input = custom_input
     else:
         tags_input = ', '.join(selected_options)
         st.write(f'There are your {len(selected_options)} tags: {selected_options}')
-        
+            
 
 #-------------------------------------------------
 # config color map for pie chart after processing tags
@@ -114,6 +118,7 @@ color_map = {
 }
 
 st.subheader(f"Visualisation of the recipes with {selected_options}")
+
 if tags_input: 
     try:
         all_recipes, all_recipes_proccessed, highest_recipes = tags_nutriscore_correlation.main(tags_input)
