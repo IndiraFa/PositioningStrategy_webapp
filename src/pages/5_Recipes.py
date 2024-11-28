@@ -236,8 +236,8 @@ def display_header_intro(position='center'):
 def display_tagscloud():
     current_dir = os.path.dirname(__file__)
     img_path = os.path.join(current_dir, "..", "tagscloud.png")
-    img = Image.open(img_path)
-    st.image(img, caption='Word cloud of tags', use_column_width=True)
+    #img = Image.open(img_path)
+    st.image(img_path, caption='Word cloud of tags', use_column_width=True)
 
 def display_select_tools():
     """
