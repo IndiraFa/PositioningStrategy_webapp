@@ -340,11 +340,11 @@ def main(arg):
         # recipes_target = data.iloc[ids_recipes_target]
         # print(recipes_target)
         # recipes_target.to_csv(Path(dir_test,f'out_selected_tags1.csv'), index=False, header=True)
-        ids_recipes_target.tofile(
-            Path(
-                dir_test,
-                f'out_selected_tags1.csv'),
-            sep=",")
+        # ids_recipes_target.tofile(
+        #     Path(
+        #         dir_test,
+        #         f'out_selected_tags1.csv'),
+        #     sep=",")
         ids_recipes_target = pd.Series(ids_recipes_target.T) # convert to pandas series or to list of integer values
 
         # combine two tables to get recipes from tags target
