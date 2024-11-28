@@ -17,6 +17,7 @@ from nutriscore_analysis import (
 st.set_page_config(layout="wide")
 
 logger = logging.getLogger("app.Homepage")
+current_dir = os.path.dirname(__file__)
 
 # SQL queries
 
