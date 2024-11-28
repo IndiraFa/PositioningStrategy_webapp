@@ -45,7 +45,7 @@ class DatabaseTable:
             
         """
         self.toml_path = toml_path
-        self.postgresql_config = self.read_toml_file()
+        # self.postgresql_config = self.read_toml_file()
         self.data = data
         self.table_name = table_name
 
