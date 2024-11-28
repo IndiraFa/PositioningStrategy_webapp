@@ -281,12 +281,12 @@ def main():
     # Call the function for identifying outliers with manual filters
     identify_outliers_with_manual_filters()
 
+    # Call the function for applying Z-score method
+    apply_z_score_method(outliers_size)
+
     # Call the function for graphical visualization of data distributions
     visualize_data_distribution(normalized_data, prefiltre_data, 
                                 nutrition_noOutliers)
-
-    # Call the function for applying Z-score method
-    apply_z_score_method(outliers_size)
 
     # Call the conclusion function
     display_conclusion()
