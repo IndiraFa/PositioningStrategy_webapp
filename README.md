@@ -31,5 +31,10 @@ python -m pip install -r requirements.txt
 streamlit run src/app.py
 ```
 
+# Documentation sphinx
+```bash
+cd docs
+make html
+```
 
 
