@@ -1,3 +1,5 @@
+import os
+import sys
 import streamlit as st
 import plotly.express as px
 import pandas as pd
@@ -365,7 +367,7 @@ def display_label_distribution(data_with_outliers, data_no_outliers):
 
         fig.update_traces(textposition='outside', textinfo='percent+label')
         st.plotly_chart(fig)
-        st.image("scale.png", width=600)
+        st.image(os.path.join(current_dir,"scale.png"), width=600)
 
     with col4:
         fig = px.pie(
