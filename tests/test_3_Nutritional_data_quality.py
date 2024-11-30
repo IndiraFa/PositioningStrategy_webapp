@@ -2,9 +2,9 @@ import sys
 import os
 import pytest
 import importlib.util
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import pandas as pd
-import numpy as np
+import matplotlib.pyplot as plt
 
 # Add the source path to import necessary modules
 sys.path.insert(
@@ -17,32 +17,26 @@ spec = importlib.util.spec_from_file_location(
     "module_3_Nutritional_data_quality",  
     os.path.join(os.path.dirname(__file__),
                   '../src/pages/3_Nutritional_data_quality.py')
-)
+    )
 module_3_Nutritional_data_quality = importlib.util.module_from_spec(spec)
 sys.modules["module_3_Nutritional_data_quality"] = \
     module_3_Nutritional_data_quality
 spec.loader.exec_module(module_3_Nutritional_data_quality)
 
-# Define the mocks
+
 @pytest.fixture
 def mock_fetch_data():
-    """
-    Fixture to mock data retrieval from the database
-    """
-
-    with patch('pandas.read_sql_query') as mock:  
-        # Mock test data
-        mock.return_value = pd.DataFrame({
-            'id': [1, 2],
-            'calories': [200, 250],
-            'total_fat_%': [10, 15],
-            'sugar_%': [5, 8],
-            'sodium_%': [1, 2],
-            'protein_%': [20, 25],
-            'sat_fat_%': [4, 5],
-            'carbs_%': [60, 55]
-        })
+    with patch('module_3_Nutritional_data_quality.fetch_data_from_db') as mock:
         yield mock
+
+
+@pytest.fixture
+def mock_linear_regression_nutrition():
+    with patch(
+        'module_3_Nutritional_data_quality.LinearRegressionNutrition'
+    ) as mock:
+        yield mock
+
 
 # Example test to verify the functionality of the Streamlit page
 def test_page_load(mock_fetch_data):
@@ -50,65 +44,164 @@ def test_page_load(mock_fetch_data):
     # Test if the module 3_Nutritional_data_quality loads without error
     assert module_3_Nutritional_data_quality is not None
 
-def test_linear_regression_results(mock_fetch_data):
-    """Test to verify the calculation of linear regression results"""
-    # Mock data for linear regression
-    mock_fetch_data.return_value = pd.DataFrame({
-        'total_fat_%': [10, 20, 15, 25, 30, 35],
-        'protein_%': [30, 40, 35, 45, 50, 55],
-        'carbs_%': [50, 60, 55, 65, 70, 75],
-        'calories': [200, 250, 225, 275, 300, 350]
-    })
 
-    # Initialize the LinearRegressionNutrition class
-    lr_nutrition = module_3_Nutritional_data_quality.LinearRegressionNutrition(
-        mock_fetch_data.return_value,
-        target='calories',
-        features=['total_fat_%', 'protein_%', 'carbs_%']
+def test_get_cached_data(mock_fetch_data):
+    mock_fetch_data.return_value = pd.DataFrame({'id': [1, 2, 3]})
+    query = "SELECT * FROM test_table"
+    result = module_3_Nutritional_data_quality.get_cached_data({}, query)
+    assert not result.empty
+
+
+def test_write_linear_regression_results():
+    with patch('streamlit.write') as mock_write:
+        module_3_Nutritional_data_quality.write_linear_regression_results(
+            [0.5, 0.3],
+            1.2, 0.05, 0.8
+        )
+        assert mock_write.call_count == 4
+
+
+def test_get_intervals_per_g():
+    intervals_df = pd.DataFrame({
+        'protein_%': [10],
+        'total_fat_%': [20],
+        'carbs_%': [30]
+    }, index=['Lower Bound']).T
+    result = module_3_Nutritional_data_quality.get_intervals_per_g(
+        50, 70, 260, intervals_df
     )
-    
-    # Perform linear regression
-    mse, r2, intercept, coefficients, y_test, y_pred = lr_nutrition\
-        .linear_regression()
-
-    # Check that the regression results are correct
-    assert isinstance(mse, float)
-    assert isinstance(r2, float)
-    assert isinstance(intercept, float)
-
-    # Check that the coefficient indices match the features
-    assert set(coefficients.index) == {'total_fat_%', 'protein_%', 'carbs_%'}
+    assert 'Calories per gram of Protein' in result.index
+    assert 'Calories per gram of Fat' in result.index
+    assert 'Calories per gram of Carbohydrates' in result.index
 
 
+def test_get_values():
+    df = pd.DataFrame({
+        'Calories per gram of Protein': [4.06],
+        'Calories per gram of Carbohydrates': [4.06],
+        'Calories per gram of Fat': [8.84]
+    }, index=['Value'])
+    result = module_3_Nutritional_data_quality.get_values(df)
+    assert result == [4.06, 4.06, 8.84]
 
-def test_confidence_intervals(mock_fetch_data):
-    """Test to verify the confidence intervals"""
-    mock_fetch_data.return_value = pd.DataFrame({
-        'total_fat_%': [10, 20],
-        'protein_%': [30, 40],
-        'carbs_%': [50, 60],
-        'calories': [200, 250]
-    })
-    
-    # Mock the bootstrap method for confidence intervals
-    lr_nutrition = module_3_Nutritional_data_quality.LinearRegressionNutrition(
-        mock_fetch_data.return_value, 
-        target='calories',
-        features=['total_fat_%', 'protein_%', 'carbs_%']
+
+def test_get_errors():
+    values = [4.06, 4.06, 8.84]
+    intervals_df = pd.DataFrame({
+        'Lower Bound': [3.5, 3.5, 8.0],
+        'Upper Bound': [4.5, 4.5, 9.0]
+    }, index=[
+        'Calories per gram of Protein',
+        'Calories per gram of Carbohydrates',
+        'Calories per gram of Fat'
+    ])
+    result = module_3_Nutritional_data_quality.get_errors(values, intervals_df)
+    assert len(result) == 3
+
+
+def test_plot_confidence_intervals():
+    values_ref = [4.06]
+    values = [4.06]
+    errors = [[0.56], [0.44]]
+    fig = module_3_Nutritional_data_quality.plot_confidence_intervals(
+        values_ref, values, 'Protein', errors
     )
+    assert isinstance(fig, plt.Figure)
 
-    conf_level = 0.9  # Example confidence level
-    confidence_intervals = lr_nutrition.bootstrap_confidence_interval(
-        num_bootstrap_samples=500, 
-        confidence_level=conf_level
+
+def test_display_header():
+    with patch('streamlit.markdown') as mock_markdown, \
+        patch('streamlit.write') as mock_write:
+        module_3_Nutritional_data_quality.display_header()
+        assert mock_markdown.call_count == 3
+        assert mock_write.call_count == 1
+
+
+def test_display_linear_regression(mock_linear_regression_nutrition):
+    mock_lr_instance = mock_linear_regression_nutrition.return_value 
+    mock_lr_instance.linear_regression.return_value = (
+        0.05, 0.8, 1.2, 
+        pd.DataFrame(
+            {'Coefficient': [0.5, 0.3, 0.4]},
+            index=['total_fat_%', 'protein_%', 'carbs_%']
+        ),
+        pd.DataFrame({'y_test': [1.2, 2.3, 3.3]}, index=[0, 1, 2]),
+        pd.DataFrame({'y_pred': [1.1, 2.1, 3.1]}, index=[0, 1, 2])
     )
+    with patch('streamlit.write') as mock_write, \
+        patch('streamlit.pyplot') as mock_pyplot:
+        module_3_Nutritional_data_quality.display_linear_regression(
+            mock_lr_instance
+        )
+        assert mock_write.call_count == 8
+        assert mock_pyplot.call_count == 1
 
-    # Check that the intervals are calculated correctly
-    assert isinstance(confidence_intervals, dict)
-    # Check that each feature has a confidence interval in the form of a tuple
-    for feature in ['total_fat_%', 'protein_%', 'carbs_%']:
-        assert feature in confidence_intervals
-        lower, upper = confidence_intervals[feature]
-        assert isinstance(lower, (float, np.float64))
-        assert isinstance(upper, (float, np.float64))
 
+def test_display_confidence_interval_test(mock_linear_regression_nutrition):
+    mock_lr_instance = mock_linear_regression_nutrition.return_value
+    mock_lr_instance.bootstrap_confidence_interval.return_value = {
+        'protein_%': [3.5, 4.5],
+        'total_fat_%': [8.0, 9.0],
+        'carbs_%': [3.5, 4.5]
+    }
+    mock_lr_instance.linear_regression.return_value = (
+        0.05, 0.8, 1.2, 
+        pd.DataFrame(
+            {'Coefficient': [0.5, 0.3, 0.4]},
+            index=['total_fat_%', 'protein_%', 'carbs_%']
+        ),
+        pd.DataFrame({'y_test': [1.2, 2.3, 3.3]}, index=[0, 1, 2]),
+        pd.DataFrame({'y_pred': [1.1, 2.1, 3.1]}, index=[0, 1, 2])
+    )
+    with patch('streamlit.write') as mock_write, patch('streamlit.slider') \
+        as mock_slider, patch('streamlit.table') as mock_table, \
+            patch('streamlit.pyplot') as mock_pyplot, \
+         patch('module_3_Nutritional_data_quality.get_intervals_per_g') \
+            as mock_get_intervals_per_g, \
+         patch('module_3_Nutritional_data_quality.get_values') \
+            as mock_get_values, \
+         patch('module_3_Nutritional_data_quality.get_errors') \
+            as mock_get_errors, \
+         patch('module_3_Nutritional_data_quality.plot_confidence_intervals') \
+            as mock_plot_confidence_intervals:
+        
+        mock_slider.return_value = 0.9
+        mock_get_intervals_per_g.return_value = pd.DataFrame({
+            'Calories per gram of Protein': [4.06],
+            'Calories per gram of Carbohydrates': [4.06],
+            'Calories per gram of Fat': [8.84]
+        }, index=['Value'])
+        mock_get_values.side_effect = [[4.06, 4.06, 8.84], [4.06, 4.06, 8.84]]
+        mock_get_errors.return_value = [
+            [0.56, 0.44], [0.56, 0.44], [0.56, 0.44]
+        ]
+        mock_plot_confidence_intervals.return_value = plt.figure()
+
+        module_3_Nutritional_data_quality.display_confidence_interval_test(
+            mock_lr_instance
+        )
+        
+        assert mock_write.call_count == 5
+        assert mock_slider.call_count == 1
+        assert mock_table.call_count == 2
+        assert mock_pyplot.call_count == 3
+
+
+def test_main_display_functions_called(
+        mock_fetch_data, mock_linear_regression_nutrition
+    ):
+    mock_fetch_data.return_value = (
+        pd.DataFrame({'id': [1, 2, 3]}), None, None, None, None, None
+    )
+    with patch('module_3_Nutritional_data_quality.display_header') \
+        as mock_display_header, \
+         patch('module_3_Nutritional_data_quality.display_linear_regression') \
+            as mock_display_linear_regression, \
+         patch('module_3_Nutritional_data_quality.display_confidence_interval_test') \
+                as mock_display_confidence_interval_test:
+        
+        module_3_Nutritional_data_quality.main()
+        
+        mock_display_header.assert_called_once()
+        mock_display_linear_regression.assert_called_once()
+        mock_display_confidence_interval_test.assert_called_once()
