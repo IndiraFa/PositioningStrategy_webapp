@@ -69,18 +69,20 @@ def display_choosing_labels(all_recipes_proccessed, all_recipes):
         if choix :
             with col1: 
                 display_datatable(all_recipes, choix)
-                st.write('...')
+                st.write(
+                    'We continue to see below the label chosen how the recipes are distributed in terms of nutrition.'
+                    'Statistical table show the mean, standard deviation, min and max values of the each nutrition. '
+                    'And the bar chart representes the distribution of the nutrition, compared to the reference values.' )
         
     # st.markdown(f'Statistical description of the recipes with the {choix} label')
     txt = st.warning(f'Statistical description of the recipes with the {choix} label') 
 
     df_choix = all_recipes_proccessed[all_recipes_proccessed['label'] == choix]
         
-    col11, col12 = st.columns([0.5, 0.5])
-    with col11:
-        dfsort_stats = display_statistical_description(df_choix, choix)
-    with col12:
-        display_pie_chart(dfsort_stats)
+
+    dfsort_stats = display_statistical_description(df_choix, choix)
+
+    display_bar_chart(dfsort_stats)
                 
 def display_statistical_description(all_recipes_proccessed, choix):
     df_choix = all_recipes_proccessed[all_recipes_proccessed['label'] == choix]
@@ -113,6 +115,12 @@ def display_pie_chart(dfsort_stats):
                     )
     st.plotly_chart(fig)
 
+def display_bar_chart(dfsort_stats):
+    fig = px.bar(dfsort_stats, x=dfsort_stats.index, y='mean', 
+                title='Nutrition bar chart of the recipes with the selected label',
+                labels={'mean':'mean values', 'index':'Nutrition'})
+    st.plotly_chart(fig)
+
 def select_to_process(all_recipes, all_recipes_proccessed, highest_recipes, tags_input):
 
     if tags_input: 
@@ -128,7 +136,11 @@ def select_to_process(all_recipes, all_recipes_proccessed, highest_recipes, tags
                 
             
             
-            st.write('...')
+            st.write(
+                'The boxplot above represents the main distribution of recipes ' 
+                'according to the labels. The X axis of the plot is the labels and '
+                'the Y axis is the range of the nutriscores.'
+            )
 
             st.subheader(f'Learning more with label study')
             
@@ -310,7 +322,7 @@ def display_boxplot(all_recipes, tags_input):
     Display the boxplot of the nutriscore & label of all recipes having the tags
     """
     fig = px.box(all_recipes, x='label', y='nutriscore', 
-            title=f"<i>Distribution of nutriscore of all recipes having <span style='background-color:purple';>{tags_input}</span> and their labels associated</i>",
+            title=f"<i>Distribution of nutriscore of all recipes having <span style='background-color: #FFFF00'>{tags_input}</span> and their labels associated</i>",
             category_orders={'label': ['A', 'B', 'C', 'D', 'E']},
             width=500, height=400)
     st.plotly_chart(fig, use_container_width=True)
@@ -318,8 +330,7 @@ def display_boxplot(all_recipes, tags_input):
         f"""<div style="text-align: right; font-size:12px"><i>
         {all_recipes.shape[0]} recipes in total
         </i></div>
-        """, 
-                    unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
 
 
 def main():
@@ -344,12 +355,13 @@ def main():
     # processing when tags are selected
     all_recipes, all_recipes_proccessed, highest_recipes = tags_nutriscore_correlation.main(tags_input)
     st.markdown(
-        f"<h2 style='text-align: center;'>Visualisation of the recipes with <span class='highlight :purple;'>{tags_input}</span></h2>",
+        f"<h2 style='text-align: center;'>Visualisation of the recipes with <span style='background-color: #FFFF00'>{tags_input}</span></h2>",
+        # "<span style="background-color: #FFFF00">{tags_input}</span>"
         unsafe_allow_html=True
     )
     select_to_process(all_recipes, all_recipes_proccessed, highest_recipes, tags_input)
     # display_anova_test(all_recipes_proccessed)
-    display_conclusion()
+    # display_conclusion()
 
 if __name__ == "__main__":
     main()
