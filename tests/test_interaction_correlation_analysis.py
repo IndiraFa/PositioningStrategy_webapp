@@ -120,6 +120,37 @@ def columns_of_interest():
     return ['interaction_count', 'average_rating', 'nutriscore']
 
 
+def test_interaction_data_init_with_path(test_interaction_data):
+    """
+    Test the __init__ method of the InteractionData class with a path
+    """
+    # Mock pd.read_csv to return the test_interaction_data DataFrame
+    with patch(
+        'pandas.read_csv', return_value=test_interaction_data
+    ) as mock_read_csv:
+        interaction_data = InteractionData(path='dummy_path.csv')
+        mock_read_csv.assert_called_once_with('dummy_path.csv', sep=',')
+        pd.testing.assert_frame_equal(
+            interaction_data.data, test_interaction_data
+        )
+
+
+def test_interaction_data_init_with_data(test_interaction_data):
+    """
+    Test the __init__ method of the InteractionData class with data
+    """
+    interaction_data = InteractionData(data=test_interaction_data)
+    pd.testing.assert_frame_equal(interaction_data.data, test_interaction_data)
+
+
+def test_interaction_data_init_without_path_or_data():
+    """
+    Test the __init__ method of the InteractionData class without path or data
+    """
+    interaction_data = InteractionData()
+    assert interaction_data.data is None
+
+
 def test_interactions_df(test_interaction_data):
     """
     Test the interactions_df method of the InteractionData class
