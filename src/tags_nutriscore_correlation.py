@@ -3,13 +3,18 @@ import os
 from pathlib import Path
 import pandas as pd
 import numpy as np
+import sys, os
 import argparse
 from functools import reduce
 import scipy.stats as stats
 import psycopg2
 import toml
+import streamlit as st
 from streamlit_todb import fetch_data_from_db_v2
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'utils')))
+from utils.config_logging import configure_logging
 
+# logger = configure_logging()
 
 # logging
 import logging
@@ -103,16 +108,19 @@ class DatabaseTable:
             logger.error(f"An error occurred: {e}")
             return None
 
+    @st.cache_data
     def apply_streamlit_db(self):
         """
-        Apply the streamlit database connection.
+        Apply the streamlit database connection to load table from database.
 
         Returns:
             DataFrame: The database table.
         """
         query = f'SELECT * FROM "{self.table_name}";'
-        data1 = fetch_data_from_db_v2(query)
-        return data1
+        data = fetch_data_from_db_v2(query)
+        return data
+    
+    
 
 class Utils:
     """Utility class for various helper functions."""
@@ -229,8 +237,11 @@ class Tags:
         """
         t = self.tagsdata
         # ids_target = self.tags[self.tags == tag].index.tolist()
-        ids_target = t.where(t['tags'] == tag).dropna()['idrecipes'].astype(int).to_list()
-        ids_target = np.unique(ids_target)
+        if (t['tags'] == tag).any():
+            ids_target = t.where(t['tags'] == tag).dropna()['idrecipes'].astype(int).to_list()
+            ids_target = np.unique(ids_target)
+        else:
+            ids_target = []
         return ids_target
 
     def extract_tag_v2(self, tag):
@@ -261,7 +272,11 @@ class Tags:
                 print("1", tag_target[0])
                 logger.info(f"single tag target : tag = {tag_target[0]}")
                 ids_target = self.extract_tag(tag_target[0])
-                return ids_target
+                if ids_target.any():
+                    return ids_target
+                else:
+                    logger.error("Any recipe have this tag")
+                    raise AssertionError("Any recipe have this tag")
             else:
                 for tag in tag_target:
                     tmp = self.extract_tag(tag)
@@ -282,10 +297,11 @@ class Tags:
             print("3")
             logger.info(f"single tag target : tag = {tag_target}")
             ids_target = self.extract_tag(tag_target)
-            return ids_target
-        else:
-            logger.error("Any recipe have this tag")
-            raise AssertionError("Any recipe have this tag")
+            if ids_target.any():
+                return ids_target
+            else:
+                logger.error("Any recipe have this tag")
+                raise AssertionError("Any recipe have this tag")
             
 
 
