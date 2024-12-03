@@ -21,8 +21,25 @@ configs = {
 
 
 class Datatools:
+    """
+    General class for data processing tools
+
+    Methods
+    -------
+    get_value_from_string(string)
+        Extracts numerical values from a string    
+    """
     @staticmethod
     def get_value_from_string(string):
+        """
+        Extracts numerical values from a string by using regular expressions
+
+        Arguments:
+        string : str : input string containing numerical values
+
+        Returns:
+        list : extracted numerical values
+        """
         try:
             # Extract numbers from the string using regular expressions
             numbers = re.findall(r"\d+\.\d+|\d+", string)
@@ -35,7 +52,50 @@ class Datatools:
 
 
 class Preprocessing:
+    """
+    This class preprocesses the raw data by performing the following steps:
+    1. Extracting the 'id' and 'nutrition' columns
+    2. Formatting the nutrition data
+    3. Normalizing the nutrition data based on daily values
+    4. Filtering out the outliers
+    5. Applying Gaussian normalization to the data
+    6. Denormalizing the Gaussian normalized data
+
+    Attributes
+    ----------
+    data : pd.DataFrame
+        DataFrame containing the raw data
+    configs : dict
+        Dictionary containing the configuration parameters
+
+    Methods
+
+    get_raw_nutrition()
+        Extracts the 'id' and 'nutrition' columns from the raw data
+    get_formatted_nutrition()
+        Formats the nutrition data by extracting numerical values
+    set_dv_normalisation()
+        Normalizes the nutrition data based on daily values
+    prefiltrage()
+        Filters out the outliers from the normalized data
+    gaussian_normalisation()
+        Applies Gaussian normalization to the data
+    Denormalisation()
+        Denormalizes the Gaussian normalized data
+    SQL_database()
+        Creates a PostgreSQL database and stores the preprocessed data
+    """
     def __init__(self, data, configs):
+        """
+        Function to initialize the Preprocessing class
+
+        Arguments:
+        data : pd.DataFrame : DataFrame containing the raw data
+        configs : dict : Dictionary containing the configuration parameters
+
+        Returns:
+        None
+        """
         try:
             # Use the provided DataFrame directly
             self.rawdata = data
@@ -55,6 +115,15 @@ class Preprocessing:
         self.Denormalisation(self.gaussiandata, self.outliers)
 
     def get_raw_nutrition(self):
+        """
+        Extracts the 'id' and 'nutrition' columns from the raw data
+
+        Arguments:
+        None
+
+        Returns:
+        pd.DataFrame : DataFrame containing the 'id' and 'nutrition' columns
+        """
         try:
             # Extract 'id' and 'nutrition' columns from raw data
             return self.rawdata[['id', 'nutrition']]
@@ -64,6 +133,16 @@ class Preprocessing:
             return pd.DataFrame()
 
     def get_formatted_nutrition(self):
+        """
+        Formats the nutrition data by extracting numerical values and splitting
+        them into separate columns
+
+        Arguments:
+        None
+
+        Returns:
+        pd.DataFrame : DataFrame containing the formatted nutrition data
+        """
         try:
             # Format the nutrition data by extracting numerical values
             data = self.get_raw_nutrition()
@@ -88,6 +167,15 @@ class Preprocessing:
             return pd.DataFrame()
 
     def set_dv_normalisation(self):
+        """
+        Normalizes the nutrition data based on daily values
+        
+        Arguments:
+        None
+
+        Returns:
+        pd.DataFrame : DataFrame containing the normalized nutrition data
+        """
         try:
             # Normalize the nutrition data based on daily values (DV)
             dv_calories = self.configs['dv_calories']
@@ -115,6 +203,15 @@ class Preprocessing:
             return pd.DataFrame()
 
     def prefiltrage(self):
+        """
+        Filters out the outliers from the normalized data
+
+        Arguments:
+        None
+
+        Returns:
+        pd.DataFrame : DataFrame containing the filtered data
+        """
         try:
             # Copy the normalized data for pre-filtering
             table_prefiltre = self.normaldata.copy()
@@ -156,6 +253,17 @@ class Preprocessing:
             return pd.DataFrame()
 
     def gaussian_normalisation(self):
+        """
+        Applies Gaussian normalization to the data, and filters out the 
+        outliers that are greater than or equal to 3
+
+        Arguments:
+        None
+
+        Returns:
+        DF_noOutliers, DF_outliers : pd.DataFrame : DataFrames containing the
+            Gaussian normalized data without outliers and the outliers
+        """
         gauss_configs = {'colname': [
             'dv_calories_%',
             'dv_total_fat_%',
@@ -209,6 +317,18 @@ class Preprocessing:
 
     # denormalisation of the data from the gaussian_normalisation     
     def Denormalisation(self, DF_noOutliers, DF_outliers): 
+        """
+        Denormalizes the Gaussian normalized data
+
+        Arguments:
+        DF_noOutliers : pd.DataFrame : DataFrame containing the Gaussian 
+            normalized data without outliers
+        DF_outliers : pd.DataFrame : DataFrame containing the outliers
+
+        Returns:
+        finalDF_noOutliers, finalDF_outliers : pd.DataFrame : DataFrames
+            containing the denormalized data without outliers and the outliers
+        """
         try:
             # Denormalize the Gaussian normalized data
             finalDF_noOutliers = DF_noOutliers.copy()
@@ -238,19 +358,28 @@ class Preprocessing:
             return pd.DataFrame()
         
     def SQL_database(self):
-        # Lire les informations de connexion depuis secrets.toml
+        """
+        Creates a PostgreSQL database and stores the preprocessed data
+
+        Arguments:
+        None
+
+        Returns:
+        None
+        """
+        # read the secrets.toml file
         secrets = toml.load('secrets.toml')
         postgresql_config = secrets['connections']['postgresql']
         # Create a PostgreSQL database and store the preprocessed data
         try:
-            # Informations de connexion à la base de données PostgreSQL
+            # Information to connect to the PostgreSQL database
             db_host = postgresql_config['host']
             db_name = postgresql_config['database']
             db_user = postgresql_config['username']
             db_password = postgresql_config['password']
             db_port = postgresql_config['port'] 
 
-            # Créer une connexion à la base de données PostgreSQL
+            # Creates a connection to the PostgreSQL database
             engine = create_engine(
                 f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/'
                 f'{db_name}'
@@ -294,17 +423,31 @@ class Preprocessing:
 
 
 def main():
-    # Lire les informations de connexion depuis secrets.toml
+    """
+    Main function to preprocess the raw data and store the preprocessed data
+    in a PostgreSQL database
+
+    Arguments:
+    None
+
+    Returns:
+
+    nutrition_table : pd.DataFrame : DataFrame containing the formatted
+        nutrition data
+    nutrition_table_normal : pd.DataFrame : DataFrame containing the
+        normalized nutrition data
+    """
+    # reads the secrets.toml file
     secrets = toml.load('secrets.toml')
     postgresql_config = secrets['connections']['postgresql']
-    # Informations de connexion à la base de données PostgreSQL
+    # information to connect to the PostgreSQL database
     db_host = postgresql_config['host']
     db_name = postgresql_config['database']
     db_user = postgresql_config['username']
     db_password = postgresql_config['password']
     db_port = postgresql_config['port']
 
-    # Créer une connexion à la base de données PostgreSQL
+    # create a connection to the PostgreSQL database
     engine = create_engine(
         f'postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
     )
