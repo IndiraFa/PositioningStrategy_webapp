@@ -35,10 +35,26 @@ logger.info("tags processing")
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
+
+@st.cache_data
+def load_streamlit_db(table_name, query=None):
+    """
+    Apply the streamlit database connection to load table from database.
+
+    Returns:
+        DataFrame: The database table.
+    """
+    if query is None:
+        query = f'SELECT * FROM "{table_name}";'
+    
+    data = fetch_data_from_db_v2(query)
+    return data
+
+
 class DatabaseTable:
     """Class for creating a database table with sql"""
 
-    def __init__(self, table_name, toml_path, data=None):
+    def __init__(self, table_name, query=None, data=None):
         """
         Initialize the CreateDatabaseTable class.
 
@@ -49,23 +65,24 @@ class DatabaseTable:
         - data (DataFrame): The input dataset to create a table from.
             
         """
-        self.toml_path = toml_path
+        # self.toml_path = toml_path
         # self.postgresql_config = self.read_toml_file()
+        self.query = query
         self.data = data
         self.table_name = table_name
 
-    def read_toml_file(self):
-        """
-        Read a toml file and return the configuration settings.
+    # def read_toml_file(self):
+    #     """
+    #     Read a toml file and return the configuration settings.
 
-        Args:
-            toml_path (str): The path to the toml file.
+    #     Args:
+    #         toml_path (str): The path to the toml file.
 
-        Returns:
-            dict: A dictionary containing the configuration settings.
-        """
-        self.postgresql_config = toml.load(self.toml_path)['connections']['postgresql']
-        return self.postgresql_config
+    #     Returns:
+    #         dict: A dictionary containing the configuration settings.
+    #     """
+    #     self.postgresql_config = toml.load(self.toml_path)['connections']['postgresql']
+    #     return self.postgresql_config
     
     # def create_table(self):
     
@@ -94,8 +111,10 @@ class DatabaseTable:
             )
 
             logger.info("Successfully connected to the database")
-
-            query = f'SELECT * FROM "{self.table_name}";'
+            if self.query is None:
+                query = f'SELECT * FROM "{self.table_name}";'
+            else:
+                query = self.query
             logger.info(f"Request line: {query}")
             df = pd.read_sql(query, conn)
 
@@ -108,7 +127,6 @@ class DatabaseTable:
             logger.error(f"An error occurred: {e}")
             return None
 
-    @st.cache_data
     def apply_streamlit_db(self):
         """
         Apply the streamlit database connection to load table from database.
@@ -116,9 +134,7 @@ class DatabaseTable:
         Returns:
             DataFrame: The database table.
         """
-        query = f'SELECT * FROM "{self.table_name}";'
-        data = fetch_data_from_db_v2(query)
-        return data
+        return load_streamlit_db(self.table_name, self.query)
     
     
 
@@ -244,19 +260,6 @@ class Tags:
             ids_target = []
         return ids_target
 
-    def extract_tag_v2(self, tag):
-        """
-        Extract recipes with a single target tag using a different method.
-
-        Args:
-            tag (str): The target tag to extract recipes for.
-
-        Returns:
-            list: A list of recipe IDs that have the target tag.
-        """
-        ids_target = self.tags.apply(lambda x: tag in x).index.tolist()
-        return [self.ids[i] for i in ids_target]
-
     def get_recipes_from_tags(self):
         """
         Extract recipes with multiple target tags.
@@ -319,12 +322,13 @@ def main(arg):
     logger.info(f"Loading data from the database ...")
     # path = os.path.join(PARENT_DIR, 'dataset/RAW_recipes.csv')
     # df_raw = pd.read_csv('/Users/phuongnguyen/Documents/cours_BGD_Telecom_Paris_2024/Kit_Big_Data/dataset/RAW_recipes.csv')
-    df_raw = DatabaseTable('raw_recipes', tom_path).apply_streamlit_db()
+    q1 = 'SELECT name, id, tags FROM "raw_recipes";'
+    df_raw = DatabaseTable('raw_recipes', query=q1).apply_streamlit_db()
     print('raw', df_raw.shape)
 
     # load dataset no outlier
     # df_nooutlier = pd.read_csv('/Users/phuongnguyen/Documents/cours_BGD_Telecom_Paris_2024/Kit_Big_Data/dataset/nutrition_table_nutriscore_no_outliers.csv')
-    df_nooutlier = DatabaseTable('NS_noOutliers', tom_path).apply_streamlit_db()
+    df_nooutlier = DatabaseTable('NS_noOutliers').apply_streamlit_db()
     print('nooutlier', df_nooutlier.shape)
 
     # if not os.path.exists(dir_test):
@@ -338,10 +342,7 @@ def main(arg):
     #         new_data_tags.to_csv(new_tags_file, index=False, header=True)
     #     else:
     # new_data_tags = pd.read_csv('/Users/phuongnguyen/Documents/cours_BGD_Telecom_Paris_2024/Kit_Big_Data/dataset/explodetags.csv')
-    new_data_tags = DatabaseTable(
-        'explodetags', 
-        tom_path
-    ).apply_streamlit_db() # with raw recipes with outliers
+    new_data_tags = DatabaseTable('explodetags').apply_streamlit_db() # with raw recipes with outliers
     print('new_data_tags', new_data_tags.shape)
 
     logger.info(f"Get tags reference from user, there are {tags_reference}")
