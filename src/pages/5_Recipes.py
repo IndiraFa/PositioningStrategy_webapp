@@ -33,8 +33,6 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 # dir_test = os.path.join(os.path.dirname(PARENT_DIR), 'tests/tags')
 current_dir = Path.cwd()
 
-
-
 def display_datatable(all_recipes, label_choice='A'):
     df_choix = all_recipes[all_recipes['label'] == label_choice].iloc[:10,:]
     if not df_choix.empty:
@@ -70,9 +68,14 @@ def display_choosing_labels(all_recipes_proccessed, all_recipes):
             with col1: 
                 display_datatable(all_recipes, choix)
                 st.write(
-                    'We continue to see below the label chosen how the recipes are distributed in terms of nutrition.'
-                    'Statistical table show the mean, standard deviation, min and max values of the each nutrition. '
-                    'And the bar chart representes the distribution of the nutrition, compared to the reference values.' )
+                    """
+                    We continue to see below the label chosen how the recipes 
+                    are distributed in terms of nutrition. Statistical table 
+                    show the mean, standard deviation, min and max values of 
+                    the each nutrition. 
+                    And the bar chart representes the distribution of the 
+                    nutrition, compared to the reference values. 
+                    """)
         
     # st.markdown(f'Statistical description of the recipes with the {choix} label')
     txt = st.warning(f'Statistical description of the recipes with the {choix} label') 
@@ -86,14 +89,14 @@ def display_choosing_labels(all_recipes_proccessed, all_recipes):
                 
 def display_statistical_description(all_recipes_proccessed, choix):
     df_choix = all_recipes_proccessed[all_recipes_proccessed['label'] == choix]
-    df_choix.rename(columns={'dv_calories_%':'calories', 
-                            'dv_protein_%':'protein',
-                            'dv_sat_fat_%':'satured fat',
-                            'dv_total_fat_%':'total fat',
-                            'dv_carbs_%':'carbohydrates',
-                            'dv_sugar_%':'sugar',
-                            'dv_sodium_%':'sodium'
-                            }, inplace=True)
+    # df_choix.rename(columns={'dv_calories_%':'calories', 
+    #                         'dv_protein_%':'protein',
+    #                         'dv_sat_fat_%':'satured fat',
+    #                         'dv_total_fat_%':'total fat',
+    #                         'dv_carbs_%':'carbohydrates',
+    #                         'dv_sugar_%':'sugar',
+    #                         'dv_sodium_%':'sodium'
+    #                         }, inplace=True)
     
     # st.markdown(f"The number of recipes with the {choix} label is {df_choix.shape[0]}"
     #         "\nNow the statistical description of these recipes is:")
@@ -116,9 +119,32 @@ def display_pie_chart(dfsort_stats):
     st.plotly_chart(fig)
 
 def display_bar_chart(dfsort_stats):
+    dfsort_stats = dfsort_stats.drop('nutriscore', axis=0)
     fig = px.bar(dfsort_stats, x=dfsort_stats.index, y='mean', 
-                title='Nutrition bar chart of the recipes with the selected label',
+                title='Nutrition of the recipes on bar chart with the selected label',
                 labels={'mean':'mean values', 'index':'Nutrition'})
+    
+    # add reference line plot for each nutrition 
+    shapes = []
+    thresholds = [37,None,84,76,91,95,None]
+    for i, threshold in enumerate(thresholds):
+        if threshold is not None:
+            shapes.append(
+                dict(
+                    type="line",
+                    x0=i - 0.4,
+                    x1=i + 0.4,
+                    y0=threshold,
+                    y1=threshold,
+                    line=dict(
+                        color="Red",
+                        width=2,
+                    ),
+                )
+            )
+
+    fig.update_layout(shapes=shapes)
+
     st.plotly_chart(fig)
 
 def select_to_process(all_recipes, all_recipes_proccessed, highest_recipes, tags_input):
@@ -137,16 +163,27 @@ def select_to_process(all_recipes, all_recipes_proccessed, highest_recipes, tags
             
             
             st.write(
-                'The boxplot above represents the main distribution of recipes ' 
-                'according to the labels. The X axis of the plot is the labels and '
-                'the Y axis is the range of the nutriscores.'
+                """
+                The boxplot above represents the main distribution of recipes 
+                according to the labels. The X axis of the plot is the labels and 
+                the Y axis is the range of the nutriscores.
+                """
             )
 
             st.subheader(f'Learning more with label study')
             
             display_choosing_labels(all_recipes_proccessed, all_recipes)
 
-            st.write('...')
+            st.write(
+                """
+                The bar chart above shows the distribution of the nutrition
+                of the recipes with the selected label. 
+                The red line represents the reference values of the nutrition.
+                For calories, sugar, satured fat and sodium, if the bar is 
+                above the red line,it means all these recipes have more 
+                nutrients than the reference values.
+                But for protein, a good recipe must have the bar above the red line.
+                """)
 
             # st.dataframe(top3_recipes['name'])
         except Exception as e:
@@ -293,7 +330,7 @@ def display_select_tools():
     Display the select tools for the user to choose the tags
     """
     # get the tags from the user
-    options = ['low carb', 'low protein', 'course', 'vegetarian', 'main ingredient', 'other']
+    options = ['low carb','low protein','course','vegetarian','main ingredient','other']
     st.markdown(
         "<p style='font-size:12px;'>"
         "<i>Select one or many options. Choose 'other' if you want to entry manually</i></p>",
@@ -307,11 +344,12 @@ def display_select_tools():
         st.stop()
 
     if ('other' in selected_options):
-        custom_input = st.text_input('Entry your tags here (using only comma to separate tags):')
+        custom_input = st.text_input(
+            'Entry your tags here (using only comma to separate tags):')
         st.write(f'_You entered_: {custom_input}')
         tags_input = custom_input
     else:
-        tags_input = ', '.join(selected_options)
+        tags_input = ','.join(selected_options)
         st.write(f'There are your {len(selected_options)} tags: {tags_input}')  
 
     
@@ -322,7 +360,10 @@ def display_boxplot(all_recipes, tags_input):
     Display the boxplot of the nutriscore & label of all recipes having the tags
     """
     fig = px.box(all_recipes, x='label', y='nutriscore', 
-            title=f"<i>Distribution of nutriscore of all recipes having <span style='background-color: #FFFF00'>{tags_input}</span> and their labels associated</i>",
+            title=f"""
+            <i>Distribution of nutriscore of all recipes having 
+            <span style='background-color: #FFFF00'>{tags_input}</span> 
+            and their labels associated</i>""",
             category_orders={'label': ['A', 'B', 'C', 'D', 'E']},
             width=500, height=400)
     st.plotly_chart(fig, use_container_width=True)
@@ -355,8 +396,8 @@ def main():
     # processing when tags are selected
     all_recipes, all_recipes_proccessed, highest_recipes = tags_nutriscore_correlation.main(tags_input)
     st.markdown(
-        f"<h2 style='text-align: center;'>Visualisation of the recipes with <span style='background-color: #FFFF00'>{tags_input}</span></h2>",
-        # "<span style="background-color: #FFFF00">{tags_input}</span>"
+        f"""<h2 style='text-align: center;'>Visualisation of the recipes with 
+        <span style='background-color: #FFFF00'>{tags_input}</span></h2>""",
         unsafe_allow_html=True
     )
     select_to_process(all_recipes, all_recipes_proccessed, highest_recipes, tags_input)
