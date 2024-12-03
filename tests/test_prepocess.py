@@ -55,12 +55,24 @@ class TestPreprocessing(unittest.TestCase):
         self.assertTrue('dv_calories_%' in gauss_data.columns)
         self.assertTrue(len(gauss_data) + len(outliers) >= len(self.preprocessor.prefiltredata))
 
+    # def test_denormalisation(self):
+    #     """Test de la méthode Denormalisation."""
+    #     gauss_data, outliers = self.preprocessor.gaussian_normalisation()
+    #     denorm_data, denorm_outliers = self.preprocessor.Denormalisation(gauss_data, outliers)
+    #     self.assertTrue(len(denorm_data) > 0)
+    #     self.assertTrue(len(denorm_outliers) >= 0)
+    
     def test_denormalisation(self):
-        """Test de la méthode Denormalisation."""
+        """Test de la méthode denormalisation."""
         gauss_data, outliers = self.preprocessor.gaussian_normalisation()
-        denorm_data, denorm_outliers = self.preprocessor.Denormalisation(gauss_data, outliers)
-        self.assertTrue(len(denorm_data) > 0)
-        self.assertTrue(len(denorm_outliers) >= 0)
+        result, result2 = self.preprocessor.Denormalisation(gauss_data, outliers)
+        expected_output = pd.DataFrame({
+            'id': [1, 2, 3],
+            'nutrition': [200, 300, 400],
+            'denormalized': [400, 600, 800]
+        })
+        pd.testing.assert_frame_equal(result, expected_output)
+
 
 if __name__ == '__main__':
     unittest.main()
