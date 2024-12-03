@@ -33,24 +33,12 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 # dir_test = os.path.join(os.path.dirname(PARENT_DIR), 'tests/tags')
 current_dir = Path.cwd()
 
-def display_top10recipes(all_recipes, highest_recipes, tags_input, label_choice='A'):
-    if all_recipes.shape[0] > 0:
-        st.markdown(
-            f"Top 10 recipes randomly with <span style='color:blue;'>{tags_input}</span> having highest nutriscore:",
-            unsafe_allow_html=True
-        )
-        st.dataframe(highest_recipes[['name','nutriscore','label','tags']].head(10), hide_index=True)
-        st.markdown(f"""
-                    <div style="text-align: right;"><i>
-                    {all_recipes.shape[0]} recipes in total
-                    </i></div>""", 
-                    unsafe_allow_html=True)
-    else:
-        st.write('No recipe found with these tags')
+
 
 def display_datatable(all_recipes, label_choice='A'):
-    df_choix = all_recipes[all_recipes['label'] == label_choice]
-    st.dataframe(df_choix[['name','nutriscore','label','tags']], hide_index=True)
+    df_choix = all_recipes[all_recipes['label'] == label_choice].iloc[:10,:]
+    if not df_choix.empty:
+        st.dataframe(df_choix[['name','nutriscore','label','tags']], hide_index=True)
     # st.markdown(
     #     f"""<div style="text-align: right;"><i>
     #     {all_recipes.shape[0]} recipes in total
@@ -63,7 +51,7 @@ def display_choosing_labels(all_recipes_proccessed, all_recipes):
             """
             <div style="text-align: justify;">
             This section is used to study the statistical description of the recipes with the selected label.\n
-            You can choose one label to study and see the top 10 recipes having this label.
+            You can choose one label to study and see the 10 random recipes having this label.
             </div>
             """,
             unsafe_allow_html=True
@@ -85,7 +73,9 @@ def display_choosing_labels(all_recipes_proccessed, all_recipes):
         
     # st.markdown(f'Statistical description of the recipes with the {choix} label')
     txt = st.warning(f'Statistical description of the recipes with the {choix} label') 
+
     df_choix = all_recipes_proccessed[all_recipes_proccessed['label'] == choix]
+        
     col11, col12 = st.columns([0.5, 0.5])
     with col11:
         dfsort_stats = display_statistical_description(df_choix, choix)
@@ -232,6 +222,53 @@ def display_header_intro(position='center'):
         """,
         unsafe_allow_html=True  
     )
+def display_header():
+    st.markdown(
+        "<h1 style='color:purple;'>Tag analysis</h1>",
+        unsafe_allow_html=True
+        )
+
+    st.write(
+        """
+       Filled in by users, the labels describe the nature, type or main cooking method of the recipes, 
+       e.g 'vegetarian', 'dinner', 'course' (see the word cloud below). 
+       We plan to explore the information from these labels that is considered useful for health. 
+       We have associated each recipe with a rating and a label, the study will sort 
+       the recipes with the selected labels, study the distribution of nutriscores, 
+       the highest nutriscores and then focus on the distribution of nutrients according to the label.
+       
+       Next to the dietary keywords, there are also typical cooking labels like 'preparation', 
+       'main ingredient', 'main dish'. Try to find your 'dinner' or 'beginner cook' if you want 
+       to cook with your children and choose one with a high rating.
+        """, unsafe_allow_html=True)
+
+    css_styles = """
+        <style>
+        .container_with_border {
+            border: 1px solid rgba(49, 51, 63, 0.2);
+            border-radius: 0.5rem;
+            padding: calc(1em - 1px);
+            background-color: #f3e5f5;
+        }
+        .container_with_border h3 {
+            color: purple;
+        }
+        .container_with_border p {
+            color: black;
+        }
+        </style>
+    """
+    st.markdown(css_styles, unsafe_allow_html=True)
+
+    st.markdown("""
+        <div class="container_with_border">
+            <h3>💡 Key takeaways</h3>
+            <p>The labels are clearly consistent with our nutriscore calculated on page 2. 
+            "Low protein" recipes cannot offer a good ratio with nutrients and are therefore rated C or D. 
+            But, with a "low cholesterol" recipe, the rating is now A. 
+            This study shows you how healthy these recipes are.</p>
+        </div>
+        """, unsafe_allow_html=True)
 
 def display_tagscloud():
     current_dir = os.path.dirname(__file__)
@@ -247,12 +284,15 @@ def display_select_tools():
     options = ['low carb', 'low protein', 'course', 'vegetarian', 'main ingredient', 'other']
     st.markdown(
         "<p style='font-size:12px;'>"
-        "<i>Select one or many options. Choose other if you want to entry manually</i></p>",
+        "<i>Select one or many options. Choose 'other' if you want to entry manually</i></p>",
         unsafe_allow_html=True
     )
     selected_options = st.multiselect(
-        '', options
+        '', options, default=['low carb']
     )
+    if not selected_options:
+        st.warning('Please select at least one option')
+        st.stop()
 
     if ('other' in selected_options):
         custom_input = st.text_input('Entry your tags here (using only comma to separate tags):')
@@ -291,13 +331,15 @@ def main():
     
 
     # setup introduction of page : header, tags cloud, select tools
-    display_header_intro(position='center')
+    # display_header_intro(position='center')
+    display_header()
+    "---"
     left, right = st.columns([0.4, 0.6])
     with right:
         display_tagscloud()
     with left:
         tags_input = display_select_tools()
-    st.markdown("""-----------------------------------""", unsafe_allow_html=True)
+    "----"
 
     # processing when tags are selected
     all_recipes, all_recipes_proccessed, highest_recipes = tags_nutriscore_correlation.main(tags_input)
