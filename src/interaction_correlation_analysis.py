@@ -29,7 +29,7 @@ class InteractionData:
             self.data = pd.read_csv(path, sep=',')
         else:
             self.data = data
-        # self.interactions_df = self.interactions_df()
+       
 
     def interactions_df(self):
         """

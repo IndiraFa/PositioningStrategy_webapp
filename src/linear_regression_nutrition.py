@@ -296,10 +296,7 @@ def main():
     mse, r2, intercept, coefficients, y_test, y_pred = (
         linear_regression_nutrition.linear_regression()
     )
-    print("type of y_test: ", type(y_test))
-    print("type of y_pred: ", type(y_pred))
-
-    print(linear_regression_nutrition.linear_regression())
+    
     linear_regression_nutrition.plot_linear_regression(y_test, y_pred)
 
     print(calories_per_gram(coefficients))

@@ -13,7 +13,8 @@ sys.path.insert(0, os.path.abspath(os.path.join
 from linear_regression_nutrition import (
     calories_per_gram,
     DataPreprocessing,
-    LinearRegressionNutrition
+    LinearRegressionNutrition, 
+    main
 )
 
 
@@ -107,34 +108,54 @@ def nutriscore_data():
     return data
 
 
-def test_load_and_preprocess_recipes_data():
-    mock_recipe_path = 'data/recipe.csv'
-    mock_nutriscore_path = 'data/nutriscore.csv'
-    # taking the example of the first row of the dataset
-    mock_data = """
-    name,id,minutes,contributor_id,submitted,tags,nutrition,n_steps,steps,description,ingredients,n_ingredients
-arriba   baked winter squash mexican style,137739,55,47892,2005-09-16,"['60-minutes-or-less', 'time-to-make', 'course', 'main-ingredient', 'cuisine', 'preparation', 'occasion', 'north-american', 'side-dishes', 'vegetables', 'mexican', 'easy', 'fall', 'holiday-event', 'vegetarian', 'winter', 'dietary', 'christmas', 'seasonal', 'squash']","[51.5, 0.0, 13.0, 0.0, 2.0, 0.0, 4.0]",11,"['make a choice and proceed with recipe', 'depending on size of squash , cut into half or fourths', 'remove seeds', 'for spicy squash , drizzle olive oil or melted butter over each cut squash piece', 'season with mexican seasoning mix ii', 'for sweet squash , drizzle melted honey , butter , grated piloncillo over each cut squash piece', 'season with sweet mexican spice mix', 'bake at 350 degrees , again depending on size , for 40 minutes up to an hour , until a fork can easily pierce the skin', 'be careful not to burn the squash especially if you opt to use sugar or butter', 'if you feel more comfortable , cover the squash with aluminum foil the first half hour , give or take , of baking', 'if desired , season with salt']","autumn is my favorite time of year to cook! this recipe 
-can be prepared either spicy or sweet, your choice!
-two of my posted mexican-inspired seasoning mix recipes are offered as suggestions.","['winter squash', 'mexican seasoning', 'mixed spice', 'honey', 'butter', 'olive oil', 'salt']",7
-    """
+@pytest.fixture
+def mock_data_preprocessing():
+    return DataPreprocessing(
+        path_recipes_data='dummy_path', path_nutriscore_data='dummy_path'
+    )
 
-    with patch('builtins.open', mock_open(read_data=mock_data)):
-        data_preprocessing = DataPreprocessing(
-            mock_recipe_path,
-            mock_nutriscore_path
-        )
-        result = data_preprocessing.load_and_preprocess_recipes_data()
-        print(result)
-        assert result.shape == (1, 8), \
-            "The shape of the DataFrame is incorrect"
-        assert result['id'][0] == 137739, "The id is incorrect"
-        assert result['calories'][0] == 51.5, "The calories are incorrect"
-        assert result['total_fat_%'][0] == 0.0, "The total fat is incorrect"
-        assert result['sugar_%'][0] == 13.0, "The sugar is incorrect"
-        assert result['sodium_%'][0] == 0.0, "The sodium is incorrect"
-        assert result['protein_%'][0] == 2.0, "The protein is incorrect"
-        assert result['sat_fat_%'][0] == 0.0, "The saturated fat is incorrect"
-        assert result['carbs_%'][0] == 4.0, "The carbohydrates are incorrect"
+@patch('linear_regression_nutrition.Preprocessing')
+def test_load_and_preprocess_recipes_data_with_data(
+    mock_Preprocessing, mock_data_preprocessing
+):
+    # Mock data
+    mock_data = pd.DataFrame({
+        'id': [1, 2, 3],
+        'name': ['Recipe1', 'Recipe2', 'Recipe3']
+    })
+    mock_data_preprocessing.data = mock_data
+
+    # Call the function
+    result = mock_data_preprocessing.load_and_preprocess_recipes_data()
+
+    # Assert that the data is returned directly
+    assert result.equals(mock_data)
+    mock_Preprocessing.assert_not_called()
+
+@patch('linear_regression_nutrition.Preprocessing')
+def test_load_and_preprocess_recipes_data_without_data(
+    mock_Preprocessing, mock_data_preprocessing
+):
+    # Mock Preprocessing instance and its method
+    mock_preprocessing_instance = mock_Preprocessing.return_value
+    mock_preprocessing_instance.get_formatted_nutrition.return_value = \
+        pd.DataFrame({
+        'id': [1, 2, 3],
+        'name': ['Recipe1', 'Recipe2', 'Recipe3']
+    })
+
+    # Ensure self.data is None
+    mock_data_preprocessing.data = None
+
+    # Call the function
+    result = mock_data_preprocessing.load_and_preprocess_recipes_data()
+
+    # Assert that Preprocessing is called and the correct data is returned
+    mock_Preprocessing.assert_called_once()
+    mock_preprocessing_instance.get_formatted_nutrition.assert_called_once()
+    assert result.equals(
+        mock_preprocessing_instance.get_formatted_nutrition.return_value
+    )
 
 
 def test_merge_data(raw_recipes_data, nutriscore_data):
@@ -386,3 +407,84 @@ def test_calories_per_gram(calories_data):
         pdt.assert_frame_equal(result, expected_result)
     except AssertionError as e:
         raise AssertionError(f"Test failed: {e}")
+
+
+@patch('linear_regression_nutrition.DataPreprocessing')
+@patch('linear_regression_nutrition.pd.read_csv')
+@patch('linear_regression_nutrition.LinearRegressionNutrition')
+@patch('linear_regression_nutrition.calories_per_gram')
+def test_main(
+    mock_calories_per_gram,
+    mock_LinearRegressionNutrition,
+    mock_read_csv,
+    mock_DataPreprocessing
+):
+    # Mock data
+    mock_raw_data = pd.DataFrame({
+        'id': [1, 2, 3],
+        'name': ['Recipe1', 'Recipe2', 'Recipe3']
+    })
+    mock_nutriscore_data = pd.DataFrame({
+        'id': [1, 2, 3],
+        'calories': [100, 200, 300],
+        'total_fat_%': [10, 20, 30],
+        'sugar_%': [5, 10, 15],
+        'sodium_%': [1, 2, 3],
+        'protein_%': [10, 20, 30],
+        'sat_fat_%': [2, 4, 6],
+        'carbs_%': [50, 60, 70]
+    })
+    mock_merged_data = mock_nutriscore_data.copy()
+    mock_filtered_data = mock_nutriscore_data.copy()
+
+    # Mock return values
+    mock_DataPreprocessing.return_value.load_and_preprocess_recipes_data.return_value = mock_raw_data
+    mock_read_csv.return_value = mock_nutriscore_data
+    mock_DataPreprocessing.return_value.merge_data.return_value \
+        = mock_merged_data
+    mock_DataPreprocessing.return_value.filter_columns.return_value \
+        = mock_filtered_data
+
+    mock_linear_regression_nutrition = \
+        mock_LinearRegressionNutrition.return_value
+    mock_linear_regression_nutrition.linear_regression.return_value = (
+        0.1, 0.9, 1.0, [0.5, 0.3, 0.2], [100, 200, 300], [110, 210, 310]
+    )
+    mock_linear_regression_nutrition.bootstrap_confidence_interval.return_value = {
+        'total_fat_%': [0.4, 0.6],
+        'protein_%': [0.2, 0.4],
+        'carbs_%': [0.1, 0.3]
+    }
+    mock_calories_per_gram.return_value = [4.0, 4.0, 9.0]
+
+    # Call the main function
+    main()
+
+    # Assert that the functions were called
+    mock_DataPreprocessing.assert_called_once_with(
+        './datasets/RAW_recipes.csv', './datasets/nutrition_table_nutriscore_no_outliers.csv'
+    )
+    mock_DataPreprocessing.return_value.load_and_preprocess_recipes_data.assert_called_once()
+    mock_read_csv.assert_called_once_with(
+        './datasets/nutrition_table_nutriscore_no_outliers.csv'
+    )
+    mock_DataPreprocessing.return_value.merge_data.assert_called_once_with(
+        mock_raw_data, mock_nutriscore_data
+    )
+    mock_DataPreprocessing.return_value.filter_columns.assert_called_once_with(
+        mock_merged_data, [
+        'id', 'calories', 'total_fat_%', 'sugar_%', 'sodium_%',
+        'protein_%', 'sat_fat_%', 'carbs_%'
+    ])
+    mock_LinearRegressionNutrition.assert_called_once_with(
+        mock_filtered_data,
+        'calories',
+        ['total_fat_%', 'protein_%', 'carbs_%']
+    )
+    mock_linear_regression_nutrition.linear_regression.assert_called_once()
+    mock_linear_regression_nutrition.plot_linear_regression.assert_called_once_with(
+        [100, 200, 300], [110, 210, 310]
+    )
+    mock_calories_per_gram.assert_called_once_with([0.5, 0.3, 0.2])
+    mock_linear_regression_nutrition.bootstrap_confidence_interval.assert_called_once()
+    

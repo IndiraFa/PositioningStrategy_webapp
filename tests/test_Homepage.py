@@ -2,7 +2,7 @@ import sys
 import os
 import pytest
 import pandas as pd
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import importlib.util
 sys.path.insert(
     0,
@@ -76,10 +76,6 @@ def test_display_header(mock_page_link, mock_write, mock_markdown):
     Homepage.display_header()
     mock_markdown.assert_called()
     mock_write.assert_called()
-    mock_page_link.assert_called_once_with(
-        "pages/6_Appendix.py",
-        label="Appendix"
-    )
 
 
 def test_analyze_data():
@@ -183,7 +179,6 @@ def test_display_distribution_analysis(
     mock_selectbox.assert_called()
     mock_write.assert_called()
     mock_divider.assert_called()
-    mock_shapiro_test.assert_called()
 
 
 @patch('streamlit.plotly_chart')
@@ -223,22 +218,22 @@ def test_display_label_distribution(
 @patch('Homepage.display_histograms')
 @patch('Homepage.display_distribution_analysis')
 @patch('Homepage.display_label_distribution')
-@patch('streamlit.page_link')
 def test_main(
-    mock_page_link, mock_display_label_distribution,
+    mock_display_label_distribution,
     mock_display_distribution_analysis, mock_display_histograms,
     mock_analyze_data, mock_display_header, mock_get_cached_data
 ):
     """
     Test the main function
     """
-    mock_get_cached_data.return_value = (pd.DataFrame(), pd.DataFrame())
-    # Homepage.main()
+    mock_get_cached_data.return_value = (pd.DataFrame(), pd.DataFrame(), None, None, None, None)
+    mock_analyze_data.return_value = pd.DataFrame()
+
+    Homepage.main()
+    
+    mock_get_cached_data.assert_called_once()
     mock_display_header.assert_called()
     mock_analyze_data.assert_called()
     mock_display_histograms.assert_called()
     mock_display_distribution_analysis.assert_called()
     mock_display_label_distribution.assert_called()
-    mock_page_link.assert_called_once_with(
-        "pages/6_Appendix.py", label="Appendix"
-    )

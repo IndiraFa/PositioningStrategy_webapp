@@ -7,7 +7,10 @@ from linear_regression_nutrition import DataPreprocessing
 logger = logging.getLogger("recipe_correlation_analysis")
 
 class CorrelationAnalysis(DataPreprocessing):
-    def __init__(self, columns_to_keep, columns_of_interest, path_recipes_data=None, path_nutriscore_data=None, data=None):
+    def __init__(
+            self, columns_to_keep, columns_of_interest,
+            path_recipes_data=None, path_nutriscore_data=None, data=None
+    ):
         if data is not None:
             super().__init__(data=data)
             self.data = data
@@ -15,7 +18,9 @@ class CorrelationAnalysis(DataPreprocessing):
             super().__init__(path_recipes_data, path_nutriscore_data)
             self.recipes_data = pd.read_csv(self.path_recipes_data)
             self.nutriscore_data = pd.read_csv(self.path_nutriscore_data)
-            self.data = self.merge_data(self.recipes_data, self.nutriscore_data)
+            self.data = self.merge_data(
+                self.recipes_data, self.nutriscore_data
+            )
 
         self.columns_to_keep = columns_to_keep
         self.columns_of_interest = columns_of_interest
@@ -83,7 +88,11 @@ def main():
         'n_steps',
         'n_ingredients'
     ]
-    correlation_analysis = CorrelationAnalysis(columns_to_keep, columns_of_interest, path_recipes_data=path_recipes_data, path_nutriscore_data=path_nutriscore_data)
+    correlation_analysis = CorrelationAnalysis(
+        columns_to_keep, columns_of_interest,
+        path_recipes_data=path_recipes_data,
+        path_nutriscore_data=path_nutriscore_data
+    )
     correlation_analysis.plot_correlation_matrix()
 
 if __name__ == '__main__':
