@@ -5,6 +5,7 @@ import plotly.express as px
 import streamlit as st
 import toml
 import psycopg2
+from utils.config_logging import configure_logging
 import logging
 
 # Add the directory containing preprocess.py to the PYTHONPATH
@@ -12,9 +13,13 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from streamlit_todb import fetch_data_from_db, configs_db
 
+configure_logging()
 # Set the page layout to wide
 st.set_page_config(layout="wide")
 
+logger = logging.getLogger("app.pages.2_Outliers.log")
+
+logger.info("Running the Outliers page.")
 
 # Define the queries to read data from the database
 FORMATTED_DATA_QUERY = 'SELECT * FROM "Formatted_data"'
@@ -32,6 +37,7 @@ def get_cached_data(configs_db, query1, query2,
 
 
 def display_introduction():
+    logger.debug("Displaying the introduction to the application.")
     st.markdown("""
     <h1 style="color:purple;">
     Nutritional Data Analysis and Outlier Detection
@@ -68,9 +74,11 @@ def display_introduction():
     Take your time to explore each step to better understand nutritional 
     data processing!  
     """, unsafe_allow_html=True)
+    logger.debug("Introduction displayed successfully.")
 
 
 def load_and_explore_raw_data(raw_data):
+    logger.debug("Loading and exploring raw data.")
     st.write('\n Here is a preview of the data:')
     st.write(raw_data.head())
     st.write('''
@@ -83,8 +91,10 @@ def load_and_explore_raw_data(raw_data):
         st.markdown('''
         Except for calories, other values are expressed as percentages. \n
                     ''')
+    logger.debug("Raw data loaded and explored successfully.")
 
 def analyze_formatted_data(formatted_data, normalized_data):
+    logger.debug("Display Analyzing formatted data and normalized data.")
     st.write('Formatted data:')
     st.write(formatted_data.head())
 
@@ -103,8 +113,10 @@ def analyze_formatted_data(formatted_data, normalized_data):
         Observing the adjusted data, we can initially identify some 
                 outliers.
                 ''')
+    logger.debug("Display Analyzing formatted data and normalized data successfully.")
 
 def identify_outliers_with_manual_filters():
+    logger.debug("Display Outliers identified with manual filters.")
     st.markdown(f'''    
         We proceeded with data cleaning by removing outliers in two \
                 steps: \n
@@ -137,8 +149,10 @@ def identify_outliers_with_manual_filters():
         st.write('''
         Number of recipes removed after applying thresholds = 645 
         ''')
+    logger.debug("Display Outliers identified with manual filters successfully.")
 
 def apply_z_score_method(outliers_size):
+    logger.debug("Display Z-score method applied.")
     st.markdown('''
         - <u>Step 2: Applying the Z-score method to identify outliers.
                 </u> \n
@@ -153,9 +167,11 @@ def apply_z_score_method(outliers_size):
         Number of recipes removed after applying thresholds followed by the 
                 Z-score method = {outliers_size}
         ''')
+    logger.debug("Display Z-score method applied successfully.")
 
 def visualize_data_distribution(normalized_data, prefiltre_data,
  nutrition_noOutliers):
+    logger.debug("Displaying graphical visualization of data distributions.")
     options = {
         'Calories distribution': 'dv_calories_%',
         'Total fat distribution': 'dv_total_fat_%',
@@ -224,8 +240,10 @@ def visualize_data_distribution(normalized_data, prefiltre_data,
     - **Number of invalid recipes (outside range)**:
                 {invalid_recipes_count}
     """)
+    logger.debug("Graphical visualization of data distributions displayed successfully.")
 
 def display_conclusion():
+    logger.debug("Displaying the conclusion.")
     st.markdown("""
     <div style="border: 2px solid purple; padding: 20px; background-color:
      #f2e6ff; border-radius: 10px;">
@@ -239,9 +257,11 @@ def display_conclusion():
         further analysis.
     </div>
     """, unsafe_allow_html=True)
+    logger.debug("Conclusion displayed successfully.")
 
 
 def main():
+    logger.debug("Starting the main function.")
     # Fetch data from the database
     formatted_data, raw_data, normalized_data, outliers_data, \
     nutrition_noOutliers, prefiltre_data = fetch_data_from_db(
@@ -254,17 +274,15 @@ def main():
         PREFILTRE_DATA_QUERY
     )
 
-    # Journal configuration (logging)
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger(__name__)
+    logger.debug("Data fetched successfully.")
 
     try:
         # Connection to the PostgreSQL database
-        logger.info("Connection to the PostgreSQL database ...")
+        logger.debug("Connection to the PostgreSQL database ...")
 
         # Calculate the number of outliers
         outliers_size = outliers_data.shape[0]
-        logger.info(f"Outliers size data: {outliers_size} lines.")
+        logger.debug(f"Outliers size data: {outliers_size} lines.")
 
     except Exception as e:
         logger.error(f"An error occurred: {e}")
@@ -290,7 +308,9 @@ def main():
 
     # Call the conclusion function
     display_conclusion()
+    logger.debug("Main function executed successfully.")
 
 if __name__ == "__main__":
     main()
 
+logger.info("Outliers page fully loaded.")
