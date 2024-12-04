@@ -15,7 +15,44 @@ logging.basicConfig(
 
 
 class NutriScore:
+    """
+    This Class calculates the NutriScore for each recipe in the dataset.
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        The dataset containing the nutritional information for each recipe.
+    grille : pd.DataFrame
+        The nutritional table containing the thresholds for each nutrient.
+    configs : dict
+        A dictionary containing the configuration parameters for the
+        NutriScore calculation.
+
+    Methods
+    -------
+    calcul_nutriscore()
+        Calculate the NutriScore for each row in the dataset.
+    set_scorelabel()
+        Assign NutriScore labels (A-E) based on the calculated scores.
+    stock_database()
+        Store the NutriScore data in a PostgreSQL database
+    """
     def __init__(self, data, grille, configs):
+        """
+        Method to initialize the NutriScore instance.
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            The dataset containing the nutritional information for each recipe.
+
+        grille : pd.DataFrame
+            The nutritional table containing the thresholds for each nutrient.
+
+        configs : dict
+            A dictionary containing the configuration parameters for the
+            NutriScore calculation.
+        """
         self.data = data
         self.grille = grille
         self.configs = configs
@@ -25,7 +62,23 @@ class NutriScore:
         self.nutriscore_label = self.set_scorelabel()
 
     def calcul_nutriscore(self):
-        """Calculate the NutriScore for each row in the dataset."""
+        """
+        Calculate the NutriScore for each row in the dataset.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame containing the calculated NutriScore for each recipe.
+
+        Raises
+        ------
+        ValueError
+            If the column "nutriscore" is missing from the dataframe.        
+        """
         data = self.data.copy()
         data['nutriscore'] = 14.0  # Start with a base score of 14
 
@@ -58,7 +111,23 @@ class NutriScore:
         return data
 
     def set_scorelabel(self):
-        """Assign NutriScore labels (A-E) based on the calculated scores."""
+        """
+        Assigns NutriScore labels (A-E) based on the calculated scores.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame containing the NutriScore labels for each recipe.
+
+        Raises
+        ------
+        ValueError
+            If the column "nutriscore" is missing from the dataframe.        
+        """
         score = self.nutriscore
         if 'nutriscore' not in score.columns:
             raise ValueError(
@@ -85,7 +154,22 @@ class NutriScore:
         return score
 
     def stock_database(self):
-        """Store the NutriScore data in a PostgreSQL database."""
+        """
+        Stores the NutriScore data in a PostgreSQL database.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        Exception
+            If an error occurs while storing the data in the database.        
+        """
         secrets = toml.load('secrets.toml')
         postgresql_config = secrets['connections']['postgresql']
         try:
@@ -108,6 +192,29 @@ class NutriScore:
 
 
 class Plot:
+    """
+    This class generates and saves distribution plots for the NutriScore data.
+
+    Parameters
+    ----------
+    data : pd.Series
+        The data to be plotted.
+    title : str
+        The title of the plot.
+    xlabel : str
+        The label for the x-axis.
+    ylabel : str
+        The label for the y-axis.
+    output_path : str
+        The path to save the plot.
+
+    Methods
+    -------
+    plot_distribution()
+        Plot and save a histogram of the data.
+    plot_distribution_label(labels)
+        Plot and save a count plot for the NutriScore labels
+    """
     def __init__(
             self,
             data,
@@ -116,6 +223,22 @@ class Plot:
             ylabel=None,
             output_path=None
         ):
+        """
+        Method to initialize the Plot instance.
+
+        Parameters
+        ----------
+        data : pd.Series
+            The data to be plotted.
+        title : str
+            The title of the plot.
+        xlabel : str
+            The label for the x-axis.
+        ylabel : str
+            The label for the y-axis.
+        output_path : str
+            The path to save the plot.
+        """
         self.data = data
         self.title = title
         self.xlabel = xlabel
@@ -123,7 +246,17 @@ class Plot:
         self.output_path = output_path
 
     def plot_distribution(self):
-        """Plot and save a histogram of the data."""
+        """
+        Plot and save a histogram of the data.
+
+        Parameters
+        ----------
+        None
+        
+        Returns
+        -------
+        None
+        """
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.hist(self.data, bins=20, edgecolor='k', alpha=0.7)
         ax.set_title(self.title)
@@ -133,7 +266,18 @@ class Plot:
         plt.show()
 
     def plot_distribution_label(self, labels):
-        """Plot and save a count plot for the NutriScore labels."""
+        """
+        Plot and save a count plot for the NutriScore labels.
+        
+        Parameters
+        ----------
+        labels : list
+            List of labels to be plotted.  
+
+        Returns
+        -------
+        None
+        """
         fig, ax = plt.subplots(figsize=(10, 6))
         sns.countplot(x=self.data, order=labels)
         ax.set_title(self.title)
@@ -144,8 +288,17 @@ class Plot:
 
 
 def main():
-    """Main function to orchestrate data processing, NutriScore calculation, 
+    """
+    Main function to orchestrate data processing, NutriScore calculation, 
     and visualization.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
     """
     # Load database credentials from a TOML file
     secrets = toml.load('secrets.toml')
@@ -193,7 +346,7 @@ def main():
         )
         nutri_score_instance.stock_database()
 
-        # Generate and save distribution plots
+        #Generate and save distribution plots
         Plot(
             nutri_score_instance.nutriscore['nutriscore'],
             title='NutriScore Distribution',
