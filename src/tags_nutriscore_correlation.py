@@ -8,7 +8,7 @@ import scipy.stats as stats
 import psycopg2
 import toml
 
-from streamlit_todb import fetch_data_from_db_v2
+from core.streamlit_todb import fetch_data_from_db_v2
 from pathlib import Path
 from functools import reduce
 
