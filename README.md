@@ -28,7 +28,7 @@ python -m pip install -r requirements.txt
 
 # Run Program
 ```python
-streamlit run src/app.py
+PYTHONPATH=src streamlit run src/Homepage.py
 ```
 
 # Documentation sphinx

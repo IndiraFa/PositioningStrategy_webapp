@@ -1,10 +1,10 @@
-import os
-import sys
 import streamlit as st
 import plotly.express as px
 import pandas as pd
 import logging
-from streamlit_todb import fetch_data_from_db, configs_db
+from core.config_logging import configure_logging
+from core.asset_manager import get_asset_path
+from utils.cache_manager import get_data_outliers
 from nutriscore_analysis import (
     nutriscore_analysis,
     shapiro_test,
@@ -14,53 +14,26 @@ from nutriscore_analysis import (
     kurtosis
 )
 
+
+# Configuration du logging
+configure_logging()
+logger = logging.getLogger("Homepage")
+
 st.set_page_config(layout="wide")
 
-logger = logging.getLogger("app.Homepage")
-current_dir = os.path.dirname(__file__)
-
-# SQL queries
-
-query1 = """
-SELECT * FROM "NS_withOutliers";
-"""
-
-query2 = """
-SELECT * FROM "NS_noOutliers";
-"""
-
-
-@st.cache_data
-def get_cached_data(configs_db, query1, query2):
-    """
-    Get the data from the database and cache it.
-
-    Args:
-    - configs_db (dict): Database configuration
-    - query1 (str): SQL query to fetch data with outliers
-    - query2 (str): SQL query to fetch data without outliers
-
-    Returns:
-    - data_with_outliers (pd.DataFrame): Data with outliers
-    - data_no_outliers (pd.DataFrame): Data without outliers
-    """
-    logger.info("Fetching data from the database")
-    return fetch_data_from_db(configs_db, query1, query2)
 
 
 def dropna_nutriscore_data(data):
     """
-    Drop the rows with missing values in the 'nutriscore' column.
-    
+    Drop rows with missing values in the 'nutriscore' column.
+
     Args:
-    - data (pd.DataFrame): Data to clean
+        data (pd.DataFrame): Data to clean
 
     Returns:
-    - data_nona (pd.DataFrame): Data without missing values in 
-    the 'nutriscore' column
+        pd.DataFrame: Cleaned data without missing 'nutriscore' values
     """
-    data_nona = data.dropna(subset=['nutriscore'])
-    return data_nona
+    return data.dropna(subset=['nutriscore'])
 
 
 def display_header():
@@ -68,7 +41,7 @@ def display_header():
     Display the header of the page.
 
     Returns:
-    - None
+        None
     """
     logger.info("Displaying the header of the homepage")
     st.markdown(
@@ -123,16 +96,15 @@ def display_header():
 
 def analyze_data(data_with_outliers, data_no_outliers):
     """
-    Analyze the data and return results on the Nutri-Score distribution (mean,
-    median, max, min), skewness and kurtosis.
+    Analyze the data and return results on Nutri-Score distribution (mean,
+    median, max, min), skewness, and kurtosis.
 
     Args:
-    - data_with_outliers (pd.DataFrame): Data with outliers
-    - data_no_outliers (pd.DataFrame): Data without outliers
+        data_with_outliers (pd.DataFrame): Data with outliers
+        data_no_outliers (pd.DataFrame): Data without outliers
 
     Returns:
-    - results (pd.DataFrame): Analysis
-    
+        pd.DataFrame: Analysis results
     """
     logger.info("Analyzing the data")
     nutriscore_with_outliers_mean, nutriscore_with_outliers_median, \
@@ -167,12 +139,12 @@ def display_histograms(data_with_outliers, data_no_outliers, results):
     Display histograms of the Nutri-Score distribution.
 
     Args:
-    - data_with_outliers (pd.DataFrame): Data with outliers
-    - data_no_outliers (pd.DataFrame): Data without outliers
-    - results (pd.DataFrame): Analysis results
+        data_with_outliers (pd.DataFrame): Data with outliers
+        data_no_outliers (pd.DataFrame): Data without outliers
+        results (pd.DataFrame): Analysis results
 
     Returns:
-    - None
+        None
     """
     logger.info("Displaying histograms")
     col1, col2 = st.columns(2)
@@ -368,7 +340,8 @@ def display_label_distribution(data_with_outliers, data_no_outliers):
 
         fig.update_traces(textposition='outside', textinfo='percent+label')
         st.plotly_chart(fig)
-        st.image(os.path.join(current_dir,"scale.png"), width=600)
+        SCALE = "images/scale.png"
+        st.image(get_asset_path(SCALE), width=600)
 
     with col4:
         fig = px.pie(
@@ -398,22 +371,17 @@ def main():
     Main function to run the analysis of the Nutri-Score.
 
     Returns:
-    - None
+        None
     """
     logger.info("Starting main function")
-    data_with_outliers, data_no_outliers, _, _, _, _ = \
-        get_cached_data(
-            configs_db,
-            query1,
-            query2,
-        )
+    data_with_outliers, data_no_outliers = get_data_outliers()
+
     display_header()
     "---"
     results = analyze_data(data_with_outliers, data_no_outliers)
     display_histograms(data_with_outliers, data_no_outliers, results)
     display_distribution_analysis(data_with_outliers, data_no_outliers)
     display_label_distribution(data_with_outliers, data_no_outliers)
-    logger.info("Finished main function")
 
 
 if __name__ == "__main__":

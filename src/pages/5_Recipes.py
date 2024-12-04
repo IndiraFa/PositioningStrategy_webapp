@@ -1,37 +1,17 @@
-import os
-import sys
 import logging
 import streamlit as st
 import pandas as pd
 import numpy as np
-from pathlib import Path
 import scipy.stats as stats
 import plotly.express as px
 from PIL import Image
 from sqlalchemy import create_engine
 import tags_nutriscore_correlation 
-
-# Configure the logging module
-logging.basicConfig(
-    level=logging.INFO,  
-    # format of the log messages
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
-    handlers=[
-        logging.FileHandler("app.log"),  # save the logs in a file
-        logging.StreamHandler()  # show the logs in the console
-    ]
-)
-
-# Create a logger object
-logger = logging.getLogger("app_logger")
-logger.info("App tags")
+from core.asset_manager import get_asset_path
 
 
-# set path to the root folder
-current_dir = os.path.dirname(os.path.abspath(__file__))
-# PARENT_DIR = os.path.dirname(CURRENT_DIR)
-# dir_test = os.path.join(os.path.dirname(PARENT_DIR), 'tests/tags')
-current_dir = Path.cwd()
+logger = logging.getLogger("pages.recipes")
+
 
 def display_top10recipes(all_recipes, highest_recipes, tags_input, label_choice='A'):
     if all_recipes.shape[0] > 0:
@@ -234,10 +214,8 @@ def display_header_intro(position='center'):
     )
 
 def display_tagscloud():
-    current_dir = os.path.dirname(__file__)
-    img_path = os.path.join(current_dir, "..", "tagscloud.png")
-    #img = Image.open(img_path)
-    st.image(img_path, caption='Word cloud of tags', use_column_width=True)
+    TAGSCLOUD = "images/tagscloud.png"
+    st.image(get_asset_path(TAGSCLOUD), caption='Word cloud of tags', use_column_width=True)
 
 def display_select_tools():
     """

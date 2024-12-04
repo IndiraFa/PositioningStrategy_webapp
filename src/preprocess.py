@@ -2,11 +2,13 @@ import sys
 import os
 import pandas as pd
 import re
-from sqlalchemy import create_engine
+import logging
 import toml
+from sqlalchemy import create_engine
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+logger = logging.getLogger("preprocess")
 
 #Define the configuration for the data preprocessing
 configs = {
@@ -29,8 +31,7 @@ class Datatools:
             # Convert the extracted numbers to floats
             return [float(num) for num in numbers]
         except Exception as e:
-            # Print an error message if extraction fails
-            print(f"Error while extracting numbers from string: {e}")
+            logger.error(f"Error while extracting numbers from string: {e}")
             return []
 
 
@@ -40,8 +41,7 @@ class Preprocessing:
             # Use the provided DataFrame directly
             self.rawdata = data
         except Exception as e:
-            # Print an error message if the data is not valid
-            print(f"Error while loading data: {e}")
+            logger.error(f"Error while loading data: {e}")
         self.configs = configs
         # Initialize dictionaries to store mu and sigma values
         self.mu_values = {}
@@ -59,8 +59,7 @@ class Preprocessing:
             # Extract 'id' and 'nutrition' columns from raw data
             return self.rawdata[['id', 'nutrition']]
         except KeyError:
-            # Print an error message if the columns are not found
-            print("Columns 'id' and 'nutrition' not found in the dataset")
+            logger.error("Columns 'id' and 'nutrition' not found in the dataset")
             return pd.DataFrame()
 
     def get_formatted_nutrition(self):
@@ -79,12 +78,10 @@ class Preprocessing:
             table['id'] = data['id'].values
             return table
         except KeyError as e:
-            # Print an error message if formatting fails
-            print(f"Error while formatting nutrition data: {e}")
+            logger.error(f"Error while formatting nutrition data: {e}")
             return pd.DataFrame()
         except Exception as e:
-            # Print an unexpected error message
-            print(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error: {e}")
             return pd.DataFrame()
 
     def set_dv_normalisation(self):
@@ -106,12 +103,10 @@ class Preprocessing:
             self.normaldata = table
             return table
         except KeyError as e:
-            # Print an error message if normalization fails
-            print(f"Error during data normalization: {e}")
+            logger.error(f"Error during data normalization: {e}")
             return pd.DataFrame()
         except Exception as e:
-            # Print an unexpected error message
-            print(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error: {e}")
             return pd.DataFrame()
 
     def prefiltrage(self):
@@ -147,12 +142,10 @@ class Preprocessing:
             return table_prefiltre
     
         except KeyError as e:
-            # Print an error message if pre-filtering fails
-            print(f"Error during data pre-filtering: {e}")
+            logger.error(f"Error during data pre-filtering: {e}")
             return pd.DataFrame()
         except Exception as e:
-            # Print an unexpected error message
-            print(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error: {e}")
             return pd.DataFrame()
 
     def gaussian_normalisation(self):
@@ -199,12 +192,10 @@ class Preprocessing:
 
             return DF_noOutliers, DF_outliers
         except KeyError as e:
-            # Print an error message if Gaussian normalization fails
-            print(f"Error during Gaussian normalization: {e}")
+            logger.error(f"Error during Gaussian normalization: {e}")
             return pd.DataFrame()
         except Exception as e:
-            # Print an unexpected error message
-            print(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error: {e}")
             return pd.DataFrame()
 
     # denormalisation of the data from the gaussian_normalisation     
@@ -229,12 +220,10 @@ class Preprocessing:
 
             return finalDF_noOutliers, finalDF_outliers
         except KeyError as e:
-            # Print an error message if denormalization fails
-            print(f"Error during data denormalization: {e}")
+            logger.error(f"Error during data denormalization: {e}")
             return pd.DataFrame()
         except Exception as e:
-            # Print an unexpected error message
-            print(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error: {e}")
             return pd.DataFrame()
         
     def SQL_database(self):
@@ -289,8 +278,7 @@ class Preprocessing:
             # Close the database connection
             conn.close()
         except Exception as e:
-            # Print an error message if database creation fails
-            print(f"Error while creating PostgreSQL database: {e}")
+            logger.error(f"Error while creating PostgreSQL database: {e}")
 
 
 def main():
@@ -327,9 +315,8 @@ def main():
     nutrition_table = preprocessing_instance.formatdata
     nutrition_table_normal = preprocessing_instance.normaldata
 
-    # Print the first few rows of each table
-    print(nutrition_table.head())
-    print(nutrition_table_normal.head())
+    logger.debug(nutrition_table.head())
+    logger.debug(nutrition_table_normal.head())
     return nutrition_table, nutrition_table_normal
 
 

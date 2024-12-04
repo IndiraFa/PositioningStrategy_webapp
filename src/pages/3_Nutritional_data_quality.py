@@ -5,18 +5,18 @@ import pandas as pd
 import logging
 import numpy as np
 import matplotlib.pyplot as plt
+from core.db_manager import execute_query
 from linear_regression_nutrition import (
     LinearRegressionNutrition,
     calories_per_gram
 )
-current_dir = os.path.dirname(__file__)
-parent_dir = os.path.abspath(os.path.join(current_dir, os.pardir))
-sys.path.append(parent_dir)
-from streamlit_todb import fetch_data_from_db, configs_db
+
+logger = logging.getLogger("pages.Nutritional_data_quality")
+
 
 st.set_page_config(layout="centered")
 
-logger = logging.getLogger("app.pages.3_Nutritional_data_quality.log")
+
 
 
 @st.cache_data
@@ -253,7 +253,7 @@ def display_confidence_interval_test(lr_nutrition):
 
 
 def main():
-    logger.info("Starting the 3_Nutritional_data_quality script")
+    logger.info("Starting the 3_Nutritional_data_quality")
     query = """
     SELECT 
         ns.id,
@@ -268,7 +268,7 @@ def main():
     INNER JOIN "NS_noOutliers" ns 
     ON fd.id=ns.id;"""
 
-    filtered_data, _, _, _, _, _ = get_cached_data(configs_db, query)
+    filtered_data = execute_query(query)
     logger.info("Data fectched from the database")
 
     features = ['total_fat_%', 'protein_%', 'carbs_%']
@@ -281,13 +281,10 @@ def main():
             target,
             features
         )
-    logger.info("Displaying header")
     display_header()
-    logger.info("Displaying linear regression")
     display_linear_regression(lr_nutrition)
-    logger.info("Displaying confidence intervalle")
     display_confidence_interval_test(lr_nutrition)
-    logger.info("Page 3_Nutritional_data_quality fully loaded")
+
 
 
 if __name__ == "__main__":

@@ -1,23 +1,13 @@
-import os
-import sys
 import streamlit as st
 import pandas as pd
 import logging
-current_dir = os.path.dirname(__file__)
-parent_dir = os.path.abspath(os.path.join(current_dir, os.pardir))
-sys.path.append(parent_dir)
-from streamlit_todb import fetch_data_from_db, configs_db
+from core.asset_manager import get_asset_path
+from utils.cache_manager import get_data_outliers
+
+logger = logging.getLogger("pages.appendix")
 
 
 st.set_page_config(layout="centered")
-
-logger = logging.getLogger("app.pages.6_Appendix.log")
-
-
-@st.cache_data
-def get_cached_data(configs_db, query):
-    return fetch_data_from_db(configs_db, query)
-
 
 def display_header():
     st.markdown(
@@ -56,8 +46,7 @@ def display_nutriscore_description():
 
 
 def display_nutriscore_grid():
-    current_dir = os.path.dirname(__file__)
-    csv_file_path = os.path.join(current_dir, "..", "nutrient_table.csv")
+    csv_file_path = get_asset_path("data/nutrient_table.csv")
     df = pd.read_csv(csv_file_path)
 
     st.write("### Nutriscore calculation grid")
@@ -82,7 +71,7 @@ def display_nutriscore_grid():
         grade.
         """
     )
-    st.image(os.path.join(current_dir, "..", "scale.png"))
+    st.image(get_asset_path("images/scale.png"))
 
 
 def display_example_calculation(df2):
@@ -122,16 +111,14 @@ def display_references():
 
 
 def main():
-    logger.info("Starting the 6_Appendix.py script")
+    logger.info("Openning Appendix")
 
-    query = 'SELECT * FROM "NS_withOutliers"'
-
-    df2, _, _, _, _, _ = get_cached_data(configs_db, query)
+    data_with_outliers = get_data_outliers()[0]
 
     display_header()
     display_nutriscore_description()
     display_nutriscore_grid()
-    display_example_calculation(df2)
+    display_example_calculation(data_with_outliers)
     display_references()
 
 

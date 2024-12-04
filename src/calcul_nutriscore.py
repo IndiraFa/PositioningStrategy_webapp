@@ -8,10 +8,7 @@ import toml
 import logging
 
 # Configure logging for debugging and tracking
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+logger = logging.getLogger("app.calcul_nutriscore")
 
 
 class NutriScore:

@@ -2,6 +2,9 @@ from functools import reduce
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import logging
+
+logger = logging.getLogger("interaction_correlation_analysis")
 
 
 class InteractionData:

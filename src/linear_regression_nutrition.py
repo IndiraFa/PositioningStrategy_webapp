@@ -1,12 +1,14 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import logging
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.utils import resample
 from sklearn.metrics import mean_squared_error, r2_score
 from preprocess import Preprocessing, configs
 
+logger = logging.getLogger("linear_regression_nutrition")
 
 class DataPreprocessing:
     """

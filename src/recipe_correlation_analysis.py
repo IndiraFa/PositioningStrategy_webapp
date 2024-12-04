@@ -1,7 +1,10 @@
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import logging
 from linear_regression_nutrition import DataPreprocessing
+
+logger = logging.getLogger("recipe_correlation_analysis")
 
 class CorrelationAnalysis(DataPreprocessing):
     def __init__(self, columns_to_keep, columns_of_interest, path_recipes_data=None, path_nutriscore_data=None, data=None):

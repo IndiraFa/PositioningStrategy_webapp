@@ -1,32 +1,22 @@
 import re
 import os
-from pathlib import Path
 import pandas as pd
 import numpy as np
 import argparse
-from functools import reduce
+import logging
 import scipy.stats as stats
 import psycopg2
 import toml
+
 from streamlit_todb import fetch_data_from_db_v2
+from pathlib import Path
+from functools import reduce
 
 
-# logging
-import logging
-# Configer the logging module
-logging.basicConfig(
-    level=logging.INFO, 
-    # format of the log messages
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
-    handlers=[
-        logging.FileHandler("tags.log"),  # save the logs in a file
-        logging.StreamHandler()  # show the logs in the console
-    ]
-)
 
 # Create a logger object
 logger = logging.getLogger("tags_nutriscore_correlation")
-logger.info("tags processing")
+
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 

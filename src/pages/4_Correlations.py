@@ -3,41 +3,11 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from recipe_correlation_analysis import CorrelationAnalysis
 from interaction_correlation_analysis import InteractionData, LabelAnalysis
-from streamlit_todb import fetch_data_from_db, configs_db
+from utils.cache_manager import *
+import logging
 
+logger = logging.getLogger("pages.Correlations")
 st.set_page_config(layout="centered")
-
-# SQL queries
-query1 = """
-SELECT 
-    ns.id,
-    ns."dv_calories_%",
-    ns."dv_total_fat_%",
-    ns."dv_sugar_%",
-    ns."dv_sodium_%",
-    ns."dv_protein_%",
-    ns."dv_sat_fat_%",
-    ns."dv_carbs_%",
-    ns."nutriscore",
-    rr."minutes",
-    rr."n_steps",
-    rr."n_ingredients"
-FROM "raw_recipes" rr 
-INNER JOIN "NS_noOutliers" ns 
-ON rr.id=ns.id;"""
-
-query2 = """
-SELECT * FROM "RAW_interactions";
-"""
-
-query3 = """
-SELECT * FROM "NS_noOutliers";
-"""
-
-
-@st.cache_data
-def get_cached_data(configs_db, query1, query2, query3):
-    return fetch_data_from_db(configs_db, query1, query2, query3)
 
 
 def display_header():
@@ -313,13 +283,9 @@ def display_interaction_correlation(interaction_data, nutriscore_data):
 
 
 def main():
-    filtered_data, interaction_data, nutriscore_data, _, _, _ = \
-        get_cached_data(
-            configs_db,
-            query1,
-            query2,
-            query3
-        )
+    filtered_data = get_filtered_data()
+    interaction_data = get_data_rawOutliers()
+    nutriscore_data = get_data_outliers()[1]
     display_header()
     "---"
     display_recipe_correlation(filtered_data)
