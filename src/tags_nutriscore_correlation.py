@@ -1,37 +1,19 @@
 import re
 import os
-from pathlib import Path
 import pandas as pd
 import numpy as np
 import sys, os
 import argparse
-from functools import reduce
+import logging
 import scipy.stats as stats
-import psycopg2
 import toml
 import streamlit as st
-from streamlit_todb import fetch_data_from_db_v2
+from db.db_instance import db_instance
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'utils')))
-from utils.config_logging import configure_logging
-
-# logger = configure_logging()
-
-# logging
 import logging
-# Configer the logging module
-logging.basicConfig(
-    level=logging.INFO, 
-    # format of the log messages
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
-    handlers=[
-        logging.FileHandler("tags.log"),  # save the logs in a file
-        logging.StreamHandler()  # show the logs in the console
-    ]
-)
 
-# Create a logger object
 logger = logging.getLogger("tags_nutriscore_correlation")
-logger.info("tags processing")
+
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -47,7 +29,7 @@ def load_streamlit_db(table_name, query=None):
     if query is None:
         query = f'SELECT * FROM "{table_name}";'
     
-    data = fetch_data_from_db_v2(query)
+    data = db_instance.fetch_data(query)
     return data
 
 
@@ -85,47 +67,7 @@ class DatabaseTable:
     #     return self.postgresql_config
     
     # def create_table(self):
-    
-    def request_table(self):
-        """
-        Request the database table.
 
-        Returns:
-            DataFrame: The database table.
-        """
-        try:
-            dbhost = self.postgresql_config['host']
-            dbdatabase = self.postgresql_config['database']
-            dbusername = self.postgresql_config['username']
-            dbpassword = self.postgresql_config['password']
-            dbport = int(self.postgresql_config['port'])
-
-            logger.info("Connecting to the database ...")
-
-            conn = psycopg2.connect(
-                host=dbhost,
-                port=dbport,
-                user=dbusername,
-                password=dbpassword,
-                dbname=dbdatabase
-            )
-
-            logger.info("Successfully connected to the database")
-            if self.query is None:
-                query = f'SELECT * FROM "{self.table_name}";'
-            else:
-                query = self.query
-            logger.info(f"Request line: {query}")
-            df = pd.read_sql(query, conn)
-
-            logger.info("Successfully read the data from the database")
-
-            conn.close()
-            logger.info("Connection to the database closed")
-            return df
-        except Exception as e:
-            logger.error(f"An error occurred: {e}")
-            return None
 
     def apply_streamlit_db(self):
         """

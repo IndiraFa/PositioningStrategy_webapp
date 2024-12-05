@@ -4,6 +4,14 @@ pages package
 Submodules
 ----------
 
+pages.2\_Outliers module
+------------------------
+
+.. automodule:: pages.2_Outliers
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 pages.3\_Nutritional\_data\_quality module
 ------------------------------------------
 
