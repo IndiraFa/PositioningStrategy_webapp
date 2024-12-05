@@ -2,25 +2,13 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 import toml
-
-import psycopg2
-from utils.config_logging import configure_logging
 import logging
 from db.db_instance import db_instance
 from db.streamlit_todb import Database
 
-# Add the directory containing preprocess.py to the PYTHONPATH
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from streamlit_todb import fetch_data_from_db, configs_db
-
-configure_logging()
+logger = logging.getLogger("pages.Outliers")
 # Set the page layout to wide
 st.set_page_config(layout="wide")
-
-logger = logging.getLogger("app.pages.2_Outliers.log")
-
-logger.info("Running the Outliers page.")
 
 @st.cache_data
 def get_cached_data(_db_instance: Database, queries):
