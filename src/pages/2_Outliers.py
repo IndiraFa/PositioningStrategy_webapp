@@ -32,11 +32,26 @@ PREFILTRE_DATA_QUERY = 'SELECT * FROM "prefiltre_data"'
 @st.cache_data
 def get_cached_data(configs_db, query1, query2,
                     query3, query4, query5, query6):
+    """
+    Cache data retrieved from the database to optimize performance.
+
+    Args:
+        configs_db (dict): Database configuration.
+        query1, query2, query3, query4, query5, query6 (str): SQL queries.
+
+    Returns:
+        tuple: Retrieved data for each query.
+    """
     return fetch_data_from_db(configs_db, query1, query2, query3, query4, 
                               query5, query6)
 
 
 def display_introduction():
+    """
+    Displays the introduction and structure of the page in the 
+    Streamlit application.
+    """
+
     logger.debug("Displaying the introduction to the application.")
     st.markdown("""
     <h1 style="color:purple;">
@@ -78,6 +93,13 @@ def display_introduction():
 
 
 def load_and_explore_raw_data(raw_data):
+    """
+    Loads and explores raw data.
+
+    Args:
+        raw_data (DataFrame): Raw data extracted from the database.
+    """
+        
     logger.debug("Loading and exploring raw data.")
     st.write('\n Here is a preview of the data:')
     st.write(raw_data.head())
@@ -94,6 +116,14 @@ def load_and_explore_raw_data(raw_data):
     logger.debug("Raw data loaded and explored successfully.")
 
 def analyze_formatted_data(formatted_data, normalized_data):
+    """
+    Analyzes formatted and adjusted data.
+
+    Args:
+        formatted_data (DataFrame): Formatted data.
+        normalized_data (DataFrame): Data normalized to daily values.
+    """
+        
     logger.debug("Display Analyzing formatted data and normalized data.")
     st.write('Formatted data:')
     st.write(formatted_data.head())
@@ -116,6 +146,10 @@ def analyze_formatted_data(formatted_data, normalized_data):
     logger.debug("Display Analyzing formatted data and normalized data successfully.")
 
 def identify_outliers_with_manual_filters():
+    """
+    Identifies outliers using manual filtering.
+    """
+        
     logger.debug("Display Outliers identified with manual filters.")
     st.markdown(f'''    
         We proceeded with data cleaning by removing outliers in two \
@@ -152,6 +186,13 @@ def identify_outliers_with_manual_filters():
     logger.debug("Display Outliers identified with manual filters successfully.")
 
 def apply_z_score_method(outliers_size):
+    """
+    Applies the Z-score method to detect outliers.
+
+    Args:
+        outliers_size (int): Number of outliers identified.
+    """
+
     logger.debug("Display Z-score method applied.")
     st.markdown('''
         - <u>Step 2: Applying the Z-score method to identify outliers.
@@ -171,6 +212,15 @@ def apply_z_score_method(outliers_size):
 
 def visualize_data_distribution(normalized_data, prefiltre_data,
  nutrition_noOutliers):
+    """
+    Visualizes data distribution using interactive graphs.
+
+    Args:
+        normalized_data (DataFrame): Unfiltered data.
+        prefiltre_data (DataFrame): Pre-filtered data.
+        nutrition_noOutliers (DataFrame): Data without outliers.
+    """
+        
     logger.debug("Displaying graphical visualization of data distributions.")
     options = {
         'Calories distribution': 'dv_calories_%',
@@ -243,6 +293,10 @@ def visualize_data_distribution(normalized_data, prefiltre_data,
     logger.debug("Graphical visualization of data distributions displayed successfully.")
 
 def display_conclusion():
+    """
+    Displays the conclusion of the analysis in the application.
+    """
+        
     logger.debug("Displaying the conclusion.")
     st.markdown("""
     <div style="border: 2px solid purple; padding: 20px; background-color:
@@ -261,6 +315,10 @@ def display_conclusion():
 
 
 def main():
+    """
+    Main function to execute all steps of the analysis.
+    """
+        
     logger.debug("Starting the main function.")
     # Fetch data from the database
     formatted_data, raw_data, normalized_data, outliers_data, \
