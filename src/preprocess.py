@@ -301,11 +301,11 @@ class Preprocessing:
         except KeyError as e:
             # Print an error message if Gaussian normalization fails
             print(f"Error during Gaussian normalization: {e}")
-            return pd.DataFrame()
+            return pd.DataFrame(), pd.DataFrame()
         except Exception as e:
             # Print an unexpected error message
             print(f"Unexpected error: {e}")
-            return pd.DataFrame()
+            return pd.DataFrame(), pd.DataFrame()
 
     # denormalisation of the data from the gaussian_normalisation     
     def Denormalisation(self, DF_noOutliers, DF_outliers): 
@@ -339,18 +339,16 @@ class Preprocessing:
                 finalDF_noOutliers[col] = (finalDF_noOutliers[col] * sigma + mu).round(3)
                 finalDF_outliers[col] = (finalDF_outliers[col] * sigma + mu).round(3)
 
-            #print(tabulate(finalDF_noOutliers.head(30), headers='keys', tablefmt='pretty'))
-            #print(tabulate(finalDF_outliers.head(30), headers='keys', tablefmt='pretty'))
 
             return finalDF_noOutliers, finalDF_outliers
         except KeyError as e:
             # Print an error message if denormalization fails
             print(f"Error during data denormalization: {e}")
-            return pd.DataFrame()
+            return pd.DataFrame(), pd.DataFrame()
         except Exception as e:
             # Print an unexpected error message
             print(f"Unexpected error: {e}")
-            return pd.DataFrame()
+            return pd.DataFrame(), pd.DataFrame()
         
     def SQL_database(self):
         """
