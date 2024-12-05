@@ -1,7 +1,7 @@
-import logging
-import os
 from datetime import datetime
+import logging
 from logging.handlers import TimedRotatingFileHandler
+import os
 
 
 def configure_logging(level=logging.INFO):
@@ -24,12 +24,8 @@ def configure_logging(level=logging.INFO):
         os.makedirs("logs")
 
     # Configure the file rotation manager
-    log_format = """
-        %(asctime)s - %(name)s - %(levelname)s - %(message)s - %(filename)s
-    """
-    log_filename = f"""
-        logs/mangetamainapp_{datetime.now().strftime('%Y-%m-%d')}.log
-    """
+    log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s - %(filename)s"
+    log_filename = f"logs/mangetamainapp_{datetime.now().strftime('%Y-%m-%d')}.log"
     file_handler = TimedRotatingFileHandler(
         log_filename,
         when="midnight",
@@ -44,9 +40,7 @@ def configure_logging(level=logging.INFO):
     console_handler.setFormatter(logging.Formatter(log_format))
 
     # Configurer le logger principal
-    logger = logging.getLogger("app")
+    logger = logging.getLogger()
     logger.setLevel(level)
     logger.addHandler(file_handler)
     logger.addHandler(console_handler)
-    logger.info("Logging configuration set")
-    return logger

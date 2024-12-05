@@ -1,34 +1,37 @@
-import sys
-import os
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 import toml
-import psycopg2
 import logging
+from db.db_instance import db_instance
+from db.streamlit_todb import Database
 
-# Add the directory containing preprocess.py to the PYTHONPATH
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from streamlit_todb import fetch_data_from_db, configs_db
-
+logger = logging.getLogger("pages.Outliers")
 # Set the page layout to wide
 st.set_page_config(layout="wide")
 
 
-# Define the queries to read data from the database
-FORMATTED_DATA_QUERY = 'SELECT * FROM "Formatted_data"'
-RAW_DATA_QUERY = 'SELECT * FROM "raw_recipes"'
-NORMALIZED_DATA_QUERY = 'SELECT * FROM "nutrition_withOutliers"'
-OUTLIERS_DATA_QUERY = 'SELECT * FROM "outliers"'
-NUTRITION_NO_OUTLIERS_QUERY = 'SELECT * FROM "nutrition_noOutliers"'
-PREFILTRE_DATA_QUERY = 'SELECT * FROM "prefiltre_data"'
-
 @st.cache_data
-def get_cached_data(configs_db, query1, query2,
-                    query3, query4, query5, query6):
-    return fetch_data_from_db(configs_db, query1, query2, query3, query4, 
-                              query5, query6)
+def get_cached_data(_db_instance: Database, queries):
+    """
+    Fetch data from the database and cache the results.
+
+    Args:
+        db_instance: Instance of the database connection.
+        queries (dict): Dictionary of SQL queries.
+
+    Returns:
+        dict: Dictionary of DataFrames containing the fetched data.
+    """
+    try:
+        logger.info("Fetching data from the database")
+        results = _db_instance.fetch_multiple(*queries.values())
+        logger.info(f"Result: {results}")
+        return {key: df for key, df in zip(queries.keys(), results)}
+    except Exception as e:
+        logger.error(f"Failed to fetch data: {e}")
+        st.error("Error while fetching data from the database.")
+        return {}
 
 
 def display_introduction():
@@ -154,8 +157,8 @@ def apply_z_score_method(outliers_size):
                 Z-score method = {outliers_size}
         ''')
 
-def visualize_data_distribution(normalized_data, prefiltre_data,
- nutrition_noOutliers):
+def visualize_data_distribution(normalized_data: pd.DataFrame, prefiltre_data: pd.DataFrame,
+ nutrition_noOutliers: pd.DataFrame):
     options = {
         'Calories distribution': 'dv_calories_%',
         'Total fat distribution': 'dv_total_fat_%',
@@ -242,54 +245,49 @@ def display_conclusion():
 
 
 def main():
-    # Fetch data from the database
-    formatted_data, raw_data, normalized_data, outliers_data, \
-    nutrition_noOutliers, prefiltre_data = fetch_data_from_db(
-        configs_db,
-        FORMATTED_DATA_QUERY,
-        RAW_DATA_QUERY,
-        NORMALIZED_DATA_QUERY,
-        OUTLIERS_DATA_QUERY,
-        NUTRITION_NO_OUTLIERS_QUERY,
-        PREFILTRE_DATA_QUERY
-    )
 
-    # Journal configuration (logging)
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger(__name__)
+    # SQL Queries
+    QUERIES = {
+        "formatted_data": 'SELECT * FROM "Formatted_data";',
+        "raw_data": 'SELECT * FROM "raw_recipes";',
+        "normalized_data": 'SELECT * FROM "nutrition_withOutliers";',
+        "outliers_data": 'SELECT * FROM "outliers";',
+        "nutrition_noOutliers": 'SELECT * FROM "nutrition_noOutliers";',
+        "prefiltre_data": 'SELECT * FROM "prefiltre_data";',
+    }
 
-    try:
-        # Connection to the PostgreSQL database
-        logger.info("Connection to the PostgreSQL database ...")
+    # Récupérer les données de la base
+    data = get_cached_data(db_instance, QUERIES)
+    if not data or not all(isinstance(df, pd.DataFrame) and not df.empty for df in data.values()):
+        st.error("Unable to load data. Please check the database connection.")
+        return
 
-        # Calculate the number of outliers
-        outliers_size = outliers_data.shape[0]
-        logger.info(f"Outliers size data: {outliers_size} lines.")
+    # Obtenir les différentes tables
+    formatted_data = data.get("formatted_data")
+    logger.info(formatted_data)
+    raw_data = data.get("raw_data")
+    logger.info(raw_data)
+    normalized_data = data.get("normalized_data")
+    logger.info(normalized_data)
+    outliers_data = data.get("outliers_data")
+    logger.info(outliers_data)
+    nutrition_noOutliers = data.get("nutrition_noOutliers")
+    prefiltre_data = data.get("prefiltre_data")
 
-    except Exception as e:
-        logger.error(f"An error occurred: {e}")
+    # Calculer le nombre d'outliers
+    outliers_size = outliers_data.shape[0]
+    logger.info(f"Number of outliers: {outliers_size}")
 
-    # Call the introduction function
+
+    # Appels les fonctions d'affichage
     display_introduction()
-
-    # Call the function for loading and exploring raw data
     load_and_explore_raw_data(raw_data)
-
-    # Call the function for analyzing formatted data
     analyze_formatted_data(formatted_data, normalized_data)
-
-    # Call the function for identifying outliers with manual filters
     identify_outliers_with_manual_filters()
-
-    # Call the function for applying Z-score method
     apply_z_score_method(outliers_size)
-
-    # Call the function for graphical visualization of data distributions
-    visualize_data_distribution(normalized_data, prefiltre_data, 
-                                nutrition_noOutliers)
-
-    # Call the conclusion function
+    visualize_data_distribution(normalized_data, prefiltre_data, nutrition_noOutliers)
     display_conclusion()
+    
 
 if __name__ == "__main__":
     main()

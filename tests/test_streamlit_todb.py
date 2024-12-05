@@ -8,7 +8,7 @@ from unittest.mock import patch, MagicMock
 sys.path.insert(0, os.path.abspath(os.path.join
                                    (os.path.dirname(__file__), '../src')
                                    ))
-from streamlit_todb import fetch_data_from_db, main
+from utils.streamlit_todb import fetch_data_from_db, main
 
 
 @pytest.fixture

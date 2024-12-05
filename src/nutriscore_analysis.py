@@ -5,7 +5,6 @@ from calcul_nutriscore import Plot
 import logging
 
 logger = logging.getLogger("nutriscore_analysis")
-logging.basicConfig(level=logging.INFO)
 
 def nutriscore_analysis(data):
     """
