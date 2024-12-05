@@ -11,6 +11,10 @@ sys.path.insert(
     os.path.abspath(os.path.join(os.path.dirname(__file__), '../src'))
 )
 
+from utils.config_logging import configure_logging
+import logging
+
+
 # Import the 2_Outliers module for testing
 spec = importlib.util.spec_from_file_location(
     "module_2_Outliers",  
@@ -24,11 +28,20 @@ spec.loader.exec_module(module_2_Outliers)
 # Define mocks for testing
 @pytest.fixture
 def mock_fetch_data():
+    """
+    Fixture to mock the 'fetch_data_from_db' method of the 2_Outliers module.
+    This is used in tests that require mocked data fetching from the database.
+    """
     with patch.object(module_2_Outliers, 'fetch_data_from_db') as mock:
         yield mock
 
 # Test the data caching functionality
 def test_get_cached_data(mock_fetch_data):
+    """
+    Test the caching functionality of the get_cached_data function.
+    Mocks the fetch_data_from_db method and verifies that the function
+    returns six data frames.
+    """
     mock_fetch_data.return_value = (
         pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(),
         pd.DataFrame(), pd.DataFrame()
@@ -41,6 +54,10 @@ def test_get_cached_data(mock_fetch_data):
 
 # Test the introduction display functionality
 def test_display_introduction():
+    """
+    Test the display_introduction function to ensure that it renders
+    the introduction markdown with the correct HTML style.
+    """
     with patch('streamlit.markdown') as mock_markdown:
         module_2_Outliers.display_introduction()
         mock_markdown.assert_called()
@@ -48,6 +65,10 @@ def test_display_introduction():
 
 # Test raw data loading and exploration
 def test_load_and_explore_raw_data():
+    """
+    Test the load_and_explore_raw_data function to ensure it renders
+    the raw data correctly using streamlit.write.
+    """
     with patch('streamlit.write') as mock_write:
         mock_raw_data = pd.DataFrame({'col1': [1, 2], 'col2': [3, 4]})
         module_2_Outliers.load_and_explore_raw_data(mock_raw_data)
@@ -55,6 +76,10 @@ def test_load_and_explore_raw_data():
 
 # Test formatted data analysis
 def test_analyze_formatted_data():
+    """
+    Test the analyze_formatted_data function to verify that it processes
+    the data correctly and calls streamlit.write and streamlit.latex.
+    """
     with patch('streamlit.write') as mock_write, patch('streamlit.latex') \
             as mock_latex:
         mock_formatted_data = pd.DataFrame({'col1': [1], 'col2': [2]})
@@ -69,6 +94,10 @@ def test_analyze_formatted_data():
 
 # Test manual outlier detection using thresholds
 def test_identify_outliers_with_manual_filters():
+    """
+    Test the identify_outliers_with_manual_filters function to ensure it
+    triggers the correct markdown and expander elements in streamlit.
+    """
     with patch('streamlit.markdown') as mock_markdown, \
         patch('streamlit.expander') \
             as mock_expander:
@@ -78,16 +107,23 @@ def test_identify_outliers_with_manual_filters():
 
 # Test Z-score method for outlier detection
 def test_apply_z_score_method():
+    """
+    Test the apply_z_score_method function to ensure that it applies
+    the Z-score method correctly and triggers the expected markdown and expander.
+    """
     with patch('streamlit.markdown') as mock_markdown, \
         patch('streamlit.expander') \
             as mock_expander:
         module_2_Outliers.apply_z_score_method(645)
         mock_markdown.assert_called()
-        mock_expander.\
-            assert_called_with("Note: Click to display more information")
+        mock_expander.assert_called_with("Note: Click to display more information")
 
 # Test data distribution visualization
 def test_visualize_data_distribution():
+    """
+    Test the visualize_data_distribution function to ensure it renders
+    histograms, box plots, and charts with the correct data.
+    """
     with patch('streamlit.selectbox', return_value='Calories distribution'), \
          patch('streamlit.radio', return_value='Filtered data'), \
          patch('streamlit.slider', return_value=(1500, 2000)), \
@@ -107,6 +143,10 @@ def test_visualize_data_distribution():
 
 # Test conclusion display functionality
 def test_display_conclusion():
+    """
+    Test the display_conclusion function to verify that it renders
+    the conclusion markdown with the expected HTML style.
+    """
     with patch('streamlit.markdown') as mock_markdown:
         module_2_Outliers.display_conclusion()
         mock_markdown.assert_called()
@@ -115,6 +155,11 @@ def test_display_conclusion():
 
 # Test the main workflow through the main function
 def test_main(mock_fetch_data):
+    """
+    Test the main function of the 2_Outliers module to ensure that all
+    steps of the workflow (introduction, raw data loading, analysis, etc.)
+    are executed correctly with the necessary mocked data.
+    """
     # Create mock data
     mock_formatted_data = MagicMock(spec=pd.DataFrame)
     mock_raw_data = MagicMock(spec=pd.DataFrame)
@@ -153,4 +198,3 @@ def test_main(mock_fetch_data):
         mock_zscore.assert_called_once()
         mock_visualize.assert_called_once()
         mock_conclusion.assert_called_once()
-

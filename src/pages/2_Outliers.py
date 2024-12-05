@@ -10,7 +10,6 @@ logger = logging.getLogger("pages.Outliers")
 # Set the page layout to wide
 st.set_page_config(layout="wide")
 
-
 @st.cache_data
 def get_cached_data(_db_instance: Database, queries):
     """
@@ -35,6 +34,12 @@ def get_cached_data(_db_instance: Database, queries):
 
 
 def display_introduction():
+    """
+    Displays the introduction and structure of the page in the 
+    Streamlit application.
+    """
+
+    logger.debug("Displaying the introduction to the application.")
     st.markdown("""
     <h1 style="color:purple;">
     Nutritional Data Analysis and Outlier Detection
@@ -71,9 +76,18 @@ def display_introduction():
     Take your time to explore each step to better understand nutritional 
     data processing!  
     """, unsafe_allow_html=True)
+    logger.debug("Introduction displayed successfully.")
 
 
 def load_and_explore_raw_data(raw_data):
+    """
+    Loads and explores raw data.
+
+    Args:
+        raw_data (DataFrame): Raw data extracted from the database.
+    """
+        
+    logger.debug("Loading and exploring raw data.")
     st.write('\n Here is a preview of the data:')
     st.write(raw_data.head())
     st.write('''
@@ -86,8 +100,18 @@ def load_and_explore_raw_data(raw_data):
         st.markdown('''
         Except for calories, other values are expressed as percentages. \n
                     ''')
+    logger.debug("Raw data loaded and explored successfully.")
 
 def analyze_formatted_data(formatted_data, normalized_data):
+    """
+    Analyzes formatted and adjusted data.
+
+    Args:
+        formatted_data (DataFrame): Formatted data.
+        normalized_data (DataFrame): Data normalized to daily values.
+    """
+        
+    logger.debug("Display Analyzing formatted data and normalized data.")
     st.write('Formatted data:')
     st.write(formatted_data.head())
 
@@ -106,8 +130,14 @@ def analyze_formatted_data(formatted_data, normalized_data):
         Observing the adjusted data, we can initially identify some 
                 outliers.
                 ''')
+    logger.debug("Display Analyzing formatted data and normalized data successfully.")
 
 def identify_outliers_with_manual_filters():
+    """
+    Identifies outliers using manual filtering.
+    """
+        
+    logger.debug("Display Outliers identified with manual filters.")
     st.markdown(f'''    
         We proceeded with data cleaning by removing outliers in two \
                 steps: \n
@@ -140,8 +170,17 @@ def identify_outliers_with_manual_filters():
         st.write('''
         Number of recipes removed after applying thresholds = 645 
         ''')
+    logger.debug("Display Outliers identified with manual filters successfully.")
 
 def apply_z_score_method(outliers_size):
+    """
+    Applies the Z-score method to detect outliers.
+
+    Args:
+        outliers_size (int): Number of outliers identified.
+    """
+
+    logger.debug("Display Z-score method applied.")
     st.markdown('''
         - <u>Step 2: Applying the Z-score method to identify outliers.
                 </u> \n
@@ -156,9 +195,19 @@ def apply_z_score_method(outliers_size):
         Number of recipes removed after applying thresholds followed by the 
                 Z-score method = {outliers_size}
         ''')
+    logger.debug("Display Z-score method applied successfully.")
+
 
 def visualize_data_distribution(normalized_data: pd.DataFrame, prefiltre_data: pd.DataFrame,
  nutrition_noOutliers: pd.DataFrame):
+    """
+    Visualizes data distribution using interactive graphs.
+
+    Args:
+        normalized_data (DataFrame): Unfiltered data.
+        prefiltre_data (DataFrame): Pre-filtered data.
+        nutrition_noOutliers (DataFrame): Data without outliers.
+    """
     options = {
         'Calories distribution': 'dv_calories_%',
         'Total fat distribution': 'dv_total_fat_%',
@@ -227,8 +276,14 @@ def visualize_data_distribution(normalized_data: pd.DataFrame, prefiltre_data: p
     - **Number of invalid recipes (outside range)**:
                 {invalid_recipes_count}
     """)
+    logger.debug("Graphical visualization of data distributions displayed successfully.")
 
 def display_conclusion():
+    """
+    Displays the conclusion of the analysis in the application.
+    """
+        
+    logger.debug("Displaying the conclusion.")
     st.markdown("""
     <div style="border: 2px solid purple; padding: 20px; background-color:
      #f2e6ff; border-radius: 10px;">
@@ -242,10 +297,10 @@ def display_conclusion():
         further analysis.
     </div>
     """, unsafe_allow_html=True)
+    logger.debug("Conclusion displayed successfully.")
 
 
 def main():
-
     # SQL Queries
     QUERIES = {
         "formatted_data": 'SELECT * FROM "Formatted_data";',
@@ -287,8 +342,9 @@ def main():
     apply_z_score_method(outliers_size)
     visualize_data_distribution(normalized_data, prefiltre_data, nutrition_noOutliers)
     display_conclusion()
-    
+    logger.debug("Main function executed successfully.")
 
 if __name__ == "__main__":
     main()
 
+logger.info("Outliers page fully loaded.")

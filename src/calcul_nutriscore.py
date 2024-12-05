@@ -105,7 +105,7 @@ class NutriScore:
                     data.loc[mask, 'nutriscore'] -= grille_row['points']
 
         return data
-
+    
     def set_scorelabel(self):
         """
         Assigns NutriScore labels (A-E) based on the calculated scores.

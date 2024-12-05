@@ -51,7 +51,6 @@ class Datatools:
             logger.error(f"Error while extracting numbers from string: {e}")
             return []
 
-
 class Preprocessing:
     """
     This class preprocesses the raw data by performing the following steps:
@@ -111,8 +110,7 @@ class Preprocessing:
         self.normaldata = self.set_dv_normalisation()
         self.prefiltredata = self.prefiltrage()
         self.gaussiandata, self.outliers = self.gaussian_normalisation()
-        self.denormalizedata, self.denormalized_outliers = \
-        self.Denormalisation(self.gaussiandata, self.outliers)
+        self.denormalizedata, self.denormalized_outliers = self.Denormalisation(self.gaussiandata, self.outliers)
 
     def get_raw_nutrition(self):
         """
@@ -145,17 +143,13 @@ class Preprocessing:
         try:
             # Format the nutrition data by extracting numerical values
             data = self.get_raw_nutrition()
-            formatted_data = (
-                data['nutrition']
-                .apply(lambda x: Datatools.get_value_from_string(x))
-            )
-            # Create a df with the formatted data and add the 'id' column
-            table = pd.DataFrame(
-                formatted_data.tolist(),
-                columns=self.configs['nutritioncolname']
-            )
+            formatted_data = data['nutrition'].apply(lambda x: Datatools.get_value_from_string(x))
+            # Create a DataFrame with the formatted data and add the 'id' column
+            table = pd.DataFrame(formatted_data.tolist(), columns=self.configs['nutritioncolname'])
             table['id'] = data['id'].values
+            
             return table
+                    
         except KeyError as e:
             logger.error(f"Error while formatting nutrition data: {e}")
             return pd.DataFrame()
@@ -180,15 +174,13 @@ class Preprocessing:
             table = pd.DataFrame()
             table['id'] = fttable['id']
             # Calculate the percentage of daily values for each nutrient
-            table['dv_calories_%'] = (
-                fttable['calories'] * 100 / dv_calories
-                ).round(2)
+            table['dv_calories_%'] = (fttable['calories'] * 100 / dv_calories).round(3)
             for col in self.configs['nutritioncolname'][1:]:
-                table[f'dv_{col}'] = (
-                    (fttable[col] * dv_calories / fttable['calories'])
-                    .round(2)
-                )
+                table[f'dv_{col}'] = (fttable[col] * dv_calories / fttable['calories']).round(3)
             self.normaldata = table
+
+            #print(tabulate(table.head(30), headers='keys', tablefmt='pretty'))
+
             return table
         except KeyError as e:
             logger.error(f"Error during data normalization: {e}")
@@ -335,8 +327,9 @@ class Preprocessing:
             for col in columns_to_denormalize:
                 mu = self.mu_values[col]
                 sigma = self.sigma_values[col]
-                finalDF_noOutliers[col] = finalDF_noOutliers[col] * sigma + mu
-                finalDF_outliers[col] = finalDF_outliers[col] * sigma + mu
+                finalDF_noOutliers[col] = (finalDF_noOutliers[col] * sigma + mu).round(3)
+                finalDF_outliers[col] = (finalDF_outliers[col] * sigma + mu).round(3)
+
 
             return finalDF_noOutliers, finalDF_outliers
         except KeyError as e:
@@ -345,6 +338,7 @@ class Preprocessing:
         except Exception as e:
             logger.error(f"Unexpected error: {e}")
             return pd.DataFrame()
+
         
     def SQL_database(self):
         """
@@ -461,7 +455,6 @@ def main():
     logger.debug(nutrition_table.head())
     logger.debug(nutrition_table_normal.head())
     return nutrition_table, nutrition_table_normal
-
 
 if __name__ == '__main__':
     main() 
