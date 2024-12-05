@@ -35,6 +35,7 @@ PYTHONPATH=src streamlit run src/Homepage.py
 ```bash
 cd docs
 make html
+xdg-open build/html/index.html
 ```
 
 

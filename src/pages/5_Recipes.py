@@ -5,7 +5,6 @@ import numpy as np
 import scipy.stats as stats
 import plotly.express as px
 from PIL import Image
-from sqlalchemy import create_engine
 import tags_nutriscore_correlation 
 from core.asset_manager import get_asset_path
 

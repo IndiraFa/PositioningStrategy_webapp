@@ -1,14 +1,37 @@
 import streamlit as st
 import seaborn as sns
+import pandas as pd
 import matplotlib.pyplot as plt
 from recipe_correlation_analysis import CorrelationAnalysis
 from interaction_correlation_analysis import InteractionData, LabelAnalysis
-from utils.cache_manager import *
+from db.db_instance import db_instance
+from db.db_instance import Database
 import logging
 
 logger = logging.getLogger("pages.Correlations")
 st.set_page_config(layout="centered")
 
+@st.cache_data
+def get_cached_data(_db_instance: Database, queries):
+    """
+    Fetch data from the database and cache the results.
+
+    Args:
+        db_instance: Instance of the database connection.
+        queries (dict): Dictionary of SQL queries.
+
+    Returns:
+        dict: Dictionary of DataFrames containing the fetched data.
+    """
+    try:
+        logger.info("Fetching data from the database")
+        results = _db_instance.fetch_multiple(*queries.values())
+        logger.info(f"Result: {results}")
+        return {key: df for key, df in zip(queries.keys(), results)}
+    except Exception as e:
+        logger.error(f"Failed to fetch data: {e}")
+        st.error("Error while fetching data from the database.")
+        return {}
 
 def display_header():
     """
@@ -77,7 +100,7 @@ def display_header():
         """, unsafe_allow_html=True)
 
 
-def display_recipe_correlation(filtered_data):
+def display_recipe_correlation(filtered_data: pd.DataFrame):
     """
     Display the correlation analysis of the recipes.
 
@@ -178,7 +201,7 @@ def display_recipe_correlation(filtered_data):
     """, unsafe_allow_html=True)
 
 
-def display_interaction_correlation(interaction_data, nutriscore_data):
+def display_interaction_correlation(interaction_data: pd.DataFrame, nutriscore_data: pd.DataFrame):
     """
     Display the correlation analysis of the interactions.
 
@@ -283,9 +306,40 @@ def display_interaction_correlation(interaction_data, nutriscore_data):
 
 
 def main():
-    filtered_data = get_filtered_data()
-    interaction_data = get_data_rawOutliers()
-    nutriscore_data = get_data_outliers()[1]
+    #SQL Queries
+    QUERIES = {
+        "filtered_data": """
+            SELECT 
+                ns.id,
+                ns."dv_calories_%%",
+                ns."dv_total_fat_%%",
+                ns."dv_sugar_%%",
+                ns."dv_sodium_%%",
+                ns."dv_protein_%%",
+                ns."dv_sat_fat_%%",
+                ns."dv_carbs_%%",
+                ns."nutriscore",
+                rr."minutes",
+                rr."n_steps",
+                rr."n_ingredients"
+            FROM "raw_recipes" rr 
+            INNER JOIN "NS_noOutliers" ns 
+            ON rr.id=ns.id;
+        """,
+        "raw_interactions": """
+            SELECT * FROM "RAW_interactions";
+        """,
+        "nutriscore": """
+            SELECT * FROM "NS_noOutliers";
+        """
+    }
+
+    # Récupérer les données de la base
+    data = get_cached_data(db_instance, QUERIES)
+
+    filtered_data = data.get("filtered_data")
+    interaction_data = data.get("raw_interactions")
+    nutriscore_data = data.get("nutriscore")
     display_header()
     "---"
     display_recipe_correlation(filtered_data)

@@ -1,384 +1,294 @@
-import streamlit as st
-import plotly.express as px
 import pandas as pd
+import plotly.express as px
+import streamlit as st
+import toml
 import logging
-from utils.cache_manager import get_data_outliers
-from core.asset_manager import get_asset_path
-from nutriscore_analysis import (
-    nutriscore_analysis,
-    shapiro_test,
-    ks_test,
-    ad_test,
-    skewness,
-    kurtosis
-)
+from db.db_instance import db_instance
+from db.streamlit_todb import Database
 
-
-st.set_page_config(layout="wide")
 logger = logging.getLogger("pages.Outliers")
+# Set the page layout to wide
+st.set_page_config(layout="wide")
 
-    
-def dropna_nutriscore_data(data):
+
+@st.cache_data
+def get_cached_data(_db_instance: Database, queries):
     """
-    Drop the rows with missing values in the 'nutriscore' column.
-    
+    Fetch data from the database and cache the results.
+
     Args:
-    - data (pd.DataFrame): Data to clean
+        db_instance: Instance of the database connection.
+        queries (dict): Dictionary of SQL queries.
 
     Returns:
-    - data_nona (pd.DataFrame): Data without missing values in 
-    the 'nutriscore' column
+        dict: Dictionary of DataFrames containing the fetched data.
     """
-    data_nona = data.dropna(subset=['nutriscore'])
-    return data_nona
+    try:
+        logger.info("Fetching data from the database")
+        results = _db_instance.fetch_multiple(*queries.values())
+        logger.info(f"Result: {results}")
+        return {key: df for key, df in zip(queries.keys(), results)}
+    except Exception as e:
+        logger.error(f"Failed to fetch data: {e}")
+        st.error("Error while fetching data from the database.")
+        return {}
 
 
-def display_header():
-    """
-    Display the header of the page.
-
-    Returns:
-    - None
-    """
-    logger.info("Displaying the header of the homepage")
-    st.markdown(
-        "<h1 style='color:purple;'>Positioning strategy for Mangetamain</h1>",
-        unsafe_allow_html=True
-    )
-
-    st.write(
-            """
-            We built a Nutrition Score based on daily value intake 
-            recommendations to explore for Mangetamain the opportunity to 
-            position itself as a healthy food brand. 
-            <br>
-            The method of calculation of the Nutriscore is described 
-            in the **Appendix** section. Details on the outliers removal
-            are available in the **Outliers** section.
-            """,
-            unsafe_allow_html=True
-    )
-
-    css_styles = """
-        <style>
-        .container_with_border {
-            border: 1px solid rgba(49, 51, 63, 0.2);
-            border-radius: 0.5rem;
-            padding: calc(1em - 1px);
-            background-color: #f3e5f5;
-        }
-        .container_with_border h3 {
-            color: purple;
-        }
-        .container_with_border p {
-            color: black;
-        }
-        </style>
-    """
-    st.markdown(css_styles, unsafe_allow_html=True)
-
+def display_introduction():
     st.markdown("""
-        <div class="container_with_border">
-            <h3>💡 Key takeaways</h3>
-            <p>The analysis of the Nutriscore shows that Mangetamain already 
-                has the potential to build a strong brand around healthy food.
-                <br>
-                Around 90% of the recipes have a Nutriscore of A, B or C, which
-                is a good indicator of the nutritional quality of the recipes 
-                of the website
-            </p>
+    <h1 style="color:purple;">
+    Nutritional Data Analysis and Outlier Detection
+    </h1>
+
+    Welcome to this interactive application! Its purpose is to explore a 
+    set of nutritional data extracted from a PostgreSQL database.  
+    Through this interface, you can visualize data, understand processing 
+    steps, and identify outliers.
+
+    <div style="display: flex; justify-content: center; padding: 10px;">
+        <div style="border: 2px solid purple; padding: 20px; background-color:\
+             #f2e6ff; border-radius: 10px; width: 50%;">
+            <h3 style="color: purple;">
+            Page Structure:
+            </h3>
+            <ul>
+                <li>Loading and exploring raw data.</li>
+                <li>Analyzing formatted data adjusted to daily nutritional 
+                    needs.</li>
+                <li>Outlier identification using:
+                    <ul>
+                        <li><strong>Manual filters based on predefined 
+                            thresholds.</strong></li>
+                        <li><strong>Z-score statistical method.</strong></li>
+                    </ul>
+                </li>
+                <li>Graphical visualization for better understanding of 
+                    distributions.</li>
+            </ul>
+        </div>
+    </div>
+    
+    Take your time to explore each step to better understand nutritional 
+    data processing!  
+    """, unsafe_allow_html=True)
+
+
+def load_and_explore_raw_data(raw_data):
+    st.write('\n Here is a preview of the data:')
+    st.write(raw_data.head())
+    st.write('''
+    The data in the nutrition column is first extracted from the table 
+            following this schema: \n
+            [calories, total_fat, sugar, sodium, protein, saturated_fat,\
+            carbohydrates] 
+            ''')
+    with st.expander("Note:"):
+        st.markdown('''
+        Except for calories, other values are expressed as percentages. \n
+                    ''')
+
+def analyze_formatted_data(formatted_data, normalized_data):
+    st.write('Formatted data:')
+    st.write(formatted_data.head())
+
+    st.markdown('''
+    Our data refers to a portion and has been adjusted, in percentage 
+                terms, to daily values of 2000 calories for an adult.
+                ''')
+    st.latex(r'''
+    \text{daily value} = \frac{\text{portion value}}{2000} \times 100
+            ''')
+
+    st.write('Adjusted data:')
+    st.write(normalized_data.head())
+
+    st.markdown(f'''
+        Observing the adjusted data, we can initially identify some 
+                outliers.
+                ''')
+
+def identify_outliers_with_manual_filters():
+    st.markdown(f'''    
+        We proceeded with data cleaning by removing outliers in two \
+                steps: \n
+        - <u>Step 1: Manual filtering by applying thresholds beyond which 
+                outliers are identified.</u> \n   
+        ''', unsafe_allow_html=True)
+
+    # Display the filtering thresholds table
+    thresholds = {
+        'dv_calories_%': 5000,
+        'dv_total_fat_%': 5000,
+        'dv_sugar_%': 5000,
+        'dv_sodium_%': 5000,
+        'dv_protein_%': 2000,
+        'dv_sat_fat_%': 2000,
+        'dv_carbs_%': 5000
+    }
+    thresholds_df = pd.DataFrame(list(thresholds.items()), 
+                                 columns=['Nutrient', 'Threshold'])
+
+    table_html = thresholds_df.to_html(index=False)
+
+    st.markdown(f"""
+        <div style="display: flex; justify-content: center;">
+            {table_html}
         </div>
         """, unsafe_allow_html=True)
-
-
-def analyze_data(data_with_outliers, data_no_outliers):
-    """
-    Analyze the data and return results on the Nutri-Score distribution (mean,
-    median, max, min), skewness and kurtosis.
-
-    Args:
-    - data_with_outliers (pd.DataFrame): Data with outliers
-    - data_no_outliers (pd.DataFrame): Data without outliers
-
-    Returns:
-    - results (pd.DataFrame): Analysis
     
-    """
-    logger.info("Analyzing the data")
-    nutriscore_with_outliers_mean, nutriscore_with_outliers_median, \
-        nutriscore_with_outliers_max, nutriscore_with_outliers_min = \
-        nutriscore_analysis(data_with_outliers)
-    skewness_with_outliers = skewness(data_with_outliers, 'nutriscore')
-    kurtois_with_outliers = kurtosis(data_with_outliers, 'nutriscore')
+    with st.expander("Note: Click to display more information"):
+        st.write('''
+        Number of recipes removed after applying thresholds = 645 
+        ''')
 
-    nutriscore_no_outliers_mean, nutriscore_no_outliers_median, \
-        nutriscore_no_outliers_max, nutriscore_no_outliers_min = \
-        nutriscore_analysis(data_no_outliers)
-    skewness_no_outliers = skewness(data_no_outliers, 'nutriscore')
-    kurtosis_no_outliers = kurtosis(data_no_outliers, 'nutriscore')
+def apply_z_score_method(outliers_size):
+    st.markdown('''
+        - <u>Step 2: Applying the Z-score method to identify outliers.
+                </u> \n
+        ''', unsafe_allow_html=True)
 
-    results = pd.DataFrame({
-        'Mean': [nutriscore_with_outliers_mean, nutriscore_no_outliers_mean],
-        'Median': [
-            nutriscore_with_outliers_median,
-            nutriscore_no_outliers_median
-        ],
-        'Max': [nutriscore_with_outliers_max, nutriscore_no_outliers_max],
-        'Min': [nutriscore_with_outliers_min, nutriscore_no_outliers_min],
-        'Skewness': [skewness_with_outliers, skewness_no_outliers],
-        'Kurtosis': [kurtois_with_outliers, kurtosis_no_outliers]
-    }, index=['With outliers', 'Without outliers'])
-    logger.debug(f"Analysis results: {results}")
-    return results
+    st.latex(r'''
+        \text{outliers} = \frac{\text{values} - \mu}{\sigma} > 3 
+                ''')
 
+    with st.expander("Note: Click to display more information"):
+        st.write(f'''
+        Number of recipes removed after applying thresholds followed by the 
+                Z-score method = {outliers_size}
+        ''')
 
-def display_histograms(data_with_outliers, data_no_outliers, results):
-    """
-    Display histograms of the Nutri-Score distribution.
+def visualize_data_distribution(normalized_data: pd.DataFrame, prefiltre_data: pd.DataFrame,
+ nutrition_noOutliers: pd.DataFrame):
+    options = {
+        'Calories distribution': 'dv_calories_%',
+        'Total fat distribution': 'dv_total_fat_%',
+        'Sugar distribution': 'dv_sugar_%',
+        'Sodium distribution': 'dv_sodium_%',
+        'Protein distribution': 'dv_protein_%',
+        'Saturated fat distribution': 'dv_sat_fat_%',
+        'Carbohydrates distribution': 'dv_carbs_%'
+    }
+    selected_option = st.selectbox('Data visualization:',
+                                    list(options.keys()))
 
-    Args:
-    - data_with_outliers (pd.DataFrame): Data with outliers
-    - data_no_outliers (pd.DataFrame): Data without outliers
-    - results (pd.DataFrame): Analysis results
+    # Display corresponding graphs
+    y_column = options[selected_option]
 
-    Returns:
-    - None
-    """
-    logger.info("Displaying histograms")
+    # Add an option to select reference data
+    data_option = st.radio(
+        "Choose the reference data",
+        ('Unfiltered data', 'Pre-filtered data', 'Filtered data'),
+        index=2
+    )
+
+    # Select data based on chosen option
+    if data_option == 'Unfiltered data':
+        data = normalized_data
+    elif data_option == 'Pre-filtered data':
+        data = prefiltre_data
+    else:
+        data = nutrition_noOutliers
+
+    # Add an x-scale slider
+    x_min, x_max = st.slider(
+        'Select the range of x values',
+        min_value=float(data[y_column].min()),
+        max_value=float(data[y_column].max()),
+        value=(float(data[y_column].min()), float(data[y_column].max()))
+    )
+
+    # Filter data based on selected range
+    filtered_data = data[(data[y_column] >= x_min) & 
+                         (data[y_column] <= x_max)]
+
+    # Use columns to display side-by-side graphs
     col1, col2 = st.columns(2)
-
     with col1:
-        st.subheader("Nutri-Score based on the full data set")
-
-        bins_with_outliers = st.slider(
-            "Select the number of bins", 4, 100, 28, key=1
-        )
-        fig = px.histogram(
-            data_with_outliers,
-            x='nutriscore',
-            nbins=bins_with_outliers,
-            title='Nutri-Score Distribution',
-            color_discrete_sequence=['#741B47']
-        )
-        fig.update_layout(
-            xaxis_title='Nutri-Score',
-            yaxis_title='Frequency',
-            template='plotly_white',
-            bargap=0.1,
-            xaxis=dict(range=[0, 14]),
-            yaxis=dict(range=[0, 45000])
-        )
+        st.write(f"### {selected_option}")
+        fig = px.histogram(filtered_data, x=y_column,
+                            title=selected_option)
         st.plotly_chart(fig)
-
-        st.divider()
-
-        st.write(results)
 
     with col2:
-        st.subheader("Nutri-Score based on the data set without outliers")
+        st.write(f"### {selected_option} - Box Plot")
+        fig_box = px.box(filtered_data, y=y_column, 
+                         title=f"Box Plot - {selected_option}")
+        st.plotly_chart(fig_box)
 
-        bins_no_outliers = st.slider(
-            "Select the number of bins", 4, 100, 28, key=2
-        )
-        fig = px.histogram(
-            data_no_outliers,
-            x='nutriscore',
-            nbins=bins_no_outliers,
-            title='Nutri-Score Distribution',
-            color_discrete_sequence=['#C27BA0']
-        )
-        fig.update_layout(
-            xaxis_title='Nutri-Score',
-            yaxis_title='Frequency',
-            template='plotly_white',
-            bargap=0.1,
-            xaxis=dict(range=[0, 14]),
-            yaxis=dict(range=[0, 45000])
-        )
-        st.plotly_chart(fig)
+    # Calculate the number of valid and invalid recipes
+    valid_recipes_count = filtered_data.shape[0]
+    invalid_recipes_count = data.shape[0] - valid_recipes_count
 
-        st.divider()
-        st.write("""
-                 - The distribution of the Nutri-Score is bell-shaped, with min 
-                 and max values between 0 and 14 as a consequence of the method
-                    used to calculate the Nutri-Score. 
-                 <br>
-                 - The mean and median are around 8.5, which is better than the 
-                 theoretical average value of 7.5 for the calculated
-                 Nutriscore.
-                 <br>
-                 - The distribution is slightly right-skewed (skewness = 0.13) 
-                 which is characteristic of a distribution with a mass 
-                 concentrated on the left side. 
-                <br>
-                 - The kurtosis is 2.7, which indicates that
-                    the distribution has heavier tails and a sharper peak than a
-                    normal distribution. 
-                 <br>
-                 - Without outliers, the mean and median are further apart. 
-                 The skewness and kurtosis are closer to 0, which indicates
-                 a slight adustment towards the normal distrubution.""",
-                 unsafe_allow_html=True
-        )
-        st.divider()
-    
+    # Display this information in Streamlit
+    st.markdown(f"""
+    ### Recipe Summary:
+    - **Number of valid recipes (within selected range)**: 
+                {valid_recipes_count}
+    - **Number of invalid recipes (outside range)**:
+                {invalid_recipes_count}
+    """)
 
-def display_distribution_analysis(data_with_outliers, data_no_outliers):
-    """
-    Display the normal distribution analysis of the Nutri-Score : Shapiro-Wilk,
-    Kolmogorov-Smirnov and Anderson-Darling tests.
-
-    Args:
-    - data_with_outliers (pd.DataFrame): Data with outliers
-    - data_no_outliers (pd.DataFrame): Data without outliers
-
-    Returns:
-    - None
-    """
-    logger.info("Displaying distribution analysis")
-    st.subheader("Analysis of the Nutri-Score distribution")
-
-    analysis = st.selectbox(
-        "Select the test for a normal distribution of the Nutriscore",
-        ["Shapiro-Wilk", "Kolmogorov-Smirnov", "Anderson-Darling"],
-        key=3
-    )
-
-    if analysis == "Shapiro-Wilk":
-        st.write("**Shapiro-Wilk test**")
-
-        shapiro_test_with_outliers = shapiro_test(
-            data_with_outliers,
-            'nutriscore'
-        )
-        st.write(
-            f"The Shapiro-Wilk test for the Nutri-Score with outliers is "
-            f"{shapiro_test_with_outliers}"
-        )
-
-        shapiro_test_no_outliers = shapiro_test(data_no_outliers, 'nutriscore')
-        st.write(
-            f"The Shapiro-Wilk test for the Nutri-Score without outliers is "
-            f"{shapiro_test_no_outliers}"
-        )
-    
-    elif analysis == "Kolmogorov-Smirnov":
-        st.write("**Kolmogorov-Smirnov test**")
-
-        ks_test_with_outliers = ks_test(data_with_outliers, 'nutriscore')
-        st.write(
-            f"The Kolmogorov-Smirnov test for the Nutri-Score \
-                with outliers is "
-            f"{ks_test_with_outliers}"
-        )
-
-        ks_test_no_outliers = ks_test(data_no_outliers, 'nutriscore')
-        st.write(
-            f"The Kolmogorov-Smirnov test for the Nutri-Score without \
-                outliers is "
-            f"{ks_test_no_outliers}"
-        )
-
-    elif analysis == "Anderson-Darling":
-        st.write("**Anderson-Darling test**")
-
-        ad_test_with_outliers = ad_test(data_with_outliers, 'nutriscore')
-        st.write(
-            f"The Anderson-Darling test for the Nutri-Score with outliers is "
-            f"{ad_test_with_outliers}"
-        )
-
-        ad_test_no_outliers = ad_test(data_no_outliers, 'nutriscore')
-        st.write(
-            f"The Anderson-Darling test for the Nutri-Score without \
-                outliers is "
-            f"{ad_test_no_outliers}"
-        )
-
-    st.write(
-        "**All tests show that the Nutri-Score is not normally distributed.** "
-        "(NB : the Shapiro-Wilk test is more accurate for N<5000)"
-    )
-
-    st.divider()
-
-
-def display_label_distribution(data_with_outliers, data_no_outliers):
-    """
-    Display the label distribution of the Nutri-Score.
-    
-    Args:
-    - data_with_outliers (pd.DataFrame): Data with outliers
-    - data_no_outliers (pd.DataFrame): Data without outliers
-
-    Returns:
-    - None
-    """
-    logger.info("Displaying label distribution")
-    st.subheader("Nutri-Score label distribution")
-
-    color_map = {
-        'A': '#1c682c',
-        'B': '#3cb455',
-        'C': '#f1c232',
-        'D': '#e69138',
-        'E': '#f44336'
-    }
-    
-    col3, col4 = st.columns(2)
-
-    with col3:
-        fig = px.pie(
-            data_with_outliers,
-            names='label',
-            title='Nutri-Score Label Distribution with outliers',
-            color='label',
-            color_discrete_map=color_map
-        )
-
-        fig.update_traces(textposition='outside', textinfo='percent+label')
-        st.plotly_chart(fig)
-        SCALE = "images/scale.png"
-        st.image(get_asset_path(SCALE), width=600)
-
-    with col4:
-        fig = px.pie(
-            data_no_outliers,
-            names='label',
-            title='Nutri-Score Label Distribution without outliers',
-            color='label',
-            color_discrete_map=color_map
-        )
-
-        fig.update_traces(textposition='outside', textinfo='percent+label')
-        st.plotly_chart(fig)
-
-        st.write(
-            """
-            Overall, the recipes show good nutritional quality, 
-            with around 90% of label A, B and C. Getting rid of
-              the outliers even improved the good to bad nutritional 
-              quality ratio, many outliers having a low Nutriscore 
-              (see details in the next section).
-            """
-        )
+def display_conclusion():
+    st.markdown("""
+    <div style="border: 2px solid purple; padding: 20px; background-color:
+     #f2e6ff; border-radius: 10px;">
+        <h3 style="color: purple;">
+        Conclusion:
+        </h3>
+        The interactive visualization allows for better understanding of 
+        distributions of various nutritional values across different categories 
+        of food recipes. The data cleaning steps, including manual filtering 
+        and Z-score method, ensure better quality of the data for 
+        further analysis.
+    </div>
+    """, unsafe_allow_html=True)
 
 
 def main():
-    """
-    Main function to run the analysis of the Nutri-Score.
 
-    Returns:
-    - None
-    """
-    data_with_outliers, data_no_outliers = get_data_outliers()
-    display_header()
-    "---"
-    results = analyze_data(data_with_outliers, data_no_outliers)
-    display_histograms(data_with_outliers, data_no_outliers, results)
-    display_distribution_analysis(data_with_outliers, data_no_outliers)
-    display_label_distribution(data_with_outliers, data_no_outliers)
+    # SQL Queries
+    QUERIES = {
+        "formatted_data": 'SELECT * FROM "Formatted_data";',
+        "raw_data": 'SELECT * FROM "raw_recipes";',
+        "normalized_data": 'SELECT * FROM "nutrition_withOutliers";',
+        "outliers_data": 'SELECT * FROM "outliers";',
+        "nutrition_noOutliers": 'SELECT * FROM "nutrition_noOutliers";',
+        "prefiltre_data": 'SELECT * FROM "prefiltre_data";',
+    }
 
+    # Récupérer les données de la base
+    data = get_cached_data(db_instance, QUERIES)
+    if not data or not all(isinstance(df, pd.DataFrame) and not df.empty for df in data.values()):
+        st.error("Unable to load data. Please check the database connection.")
+        return
+
+    # Obtenir les différentes tables
+    formatted_data = data.get("formatted_data")
+    logger.info(formatted_data)
+    raw_data = data.get("raw_data")
+    logger.info(raw_data)
+    normalized_data = data.get("normalized_data")
+    logger.info(normalized_data)
+    outliers_data = data.get("outliers_data")
+    logger.info(outliers_data)
+    nutrition_noOutliers = data.get("nutrition_noOutliers")
+    prefiltre_data = data.get("prefiltre_data")
+
+    # Calculer le nombre d'outliers
+    outliers_size = outliers_data.shape[0]
+    logger.info(f"Number of outliers: {outliers_size}")
+
+
+    # Appels les fonctions d'affichage
+    display_introduction()
+    load_and_explore_raw_data(raw_data)
+    analyze_formatted_data(formatted_data, normalized_data)
+    identify_outliers_with_manual_filters()
+    apply_z_score_method(outliers_size)
+    visualize_data_distribution(normalized_data, prefiltre_data, nutrition_noOutliers)
+    display_conclusion()
+    
 
 if __name__ == "__main__":
     main()
+

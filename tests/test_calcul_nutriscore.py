@@ -11,7 +11,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),
 from sqlalchemy import create_engine, text
 from unittest.mock import patch, MagicMock
 from calcul_nutriscore import NutriScore, Plot
-from streamlit_todb import fetch_data_from_db, configs_db
+from utils.streamlit_todb import fetch_data_from_db, configs_db
 
 # SQL Queries
 query1 = 'SELECT * FROM "nutrition_withOutliers"'

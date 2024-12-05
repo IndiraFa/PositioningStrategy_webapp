@@ -299,11 +299,11 @@ def main():
     
     linear_regression_nutrition.plot_linear_regression(y_test, y_pred)
 
-    print(calories_per_gram(coefficients))
+    logger.info(calories_per_gram(coefficients))
 
     intervals = linear_regression_nutrition.bootstrap_confidence_interval()
     for feature, interval in intervals.items():
-        print(f"Bootstrap confidence interval for {feature}: {interval}")
+        logger.info(f"Bootstrap confidence interval for {feature}: {interval}")
     return None
 
 

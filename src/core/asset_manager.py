@@ -3,7 +3,7 @@ import os
 
 logger = logging.getLogger("core.asset_manager")
 
-def get_asset_path(file_path):
+def get_asset_path(file_path: str):
     """
     Get the absolute path to a file in the assets directory.
 

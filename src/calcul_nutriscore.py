@@ -7,7 +7,6 @@ from sqlalchemy import create_engine
 import toml
 import logging
 
-# Configure logging for debugging and tracking
 logger = logging.getLogger("app.calcul_nutriscore")
 
 

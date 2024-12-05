@@ -4,7 +4,8 @@ import pandas as pd
 import logging
 from core.config_logging import configure_logging
 from core.asset_manager import get_asset_path
-from utils.cache_manager import get_data_outliers
+from db.db_instance import db_instance
+from db.db_instance import Database
 from nutriscore_analysis import (
     nutriscore_analysis,
     shapiro_test,
@@ -13,15 +14,37 @@ from nutriscore_analysis import (
     skewness,
     kurtosis
 )
-
+st.set_page_config(layout="wide")
 
 # Configuration du logging
 configure_logging()
 logger = logging.getLogger("Homepage")
 
-st.set_page_config(layout="wide")
+# SQL queries
 
+@st.cache_data
+def get_cached_data(_db_instance: Database, query1:str, query2:str):
+    """
+    Get the data from the database and cache it.
 
+    Args:
+    - db_instance (Database): Instance de la classe Database pour effectuer
+      les requêtes
+    - query1 (str): SQL query to fetch data with outliers
+    - query2 (str): SQL query to fetch data without outliers
+
+    Returns:
+    - data_with_outliers (pd.DataFrame): Data with outliers
+    - data_no_outliers (pd.DataFrame): Data without outliers
+    """
+    logger.info("Fetching data from the database using db_instance")
+    try:
+        data_with_outliers = db_instance.fetch_data(query1)
+        data_no_outliers = db_instance.fetch_data(query2)
+        return data_with_outliers, data_no_outliers
+    except Exception as e:
+        logger.error(f"An error occurred while fetching data: {e}")
+        return None, None
 
 def dropna_nutriscore_data(data):
     """
@@ -43,7 +66,7 @@ def display_header():
     Returns:
         None
     """
-    logger.info("Displaying the header of the homepage")
+    logger.debug("Displaying the header of the homepage")
     st.markdown(
         "<h1 style='color:purple;'>Positioning strategy for Mangetamain</h1>",
         unsafe_allow_html=True
@@ -94,7 +117,7 @@ def display_header():
         """, unsafe_allow_html=True)
 
 
-def analyze_data(data_with_outliers, data_no_outliers):
+def analyze_data(data_with_outliers: pd.DataFrame, data_no_outliers: pd.DataFrame):
     """
     Analyze the data and return results on Nutri-Score distribution (mean,
     median, max, min), skewness, and kurtosis.
@@ -106,7 +129,7 @@ def analyze_data(data_with_outliers, data_no_outliers):
     Returns:
         pd.DataFrame: Analysis results
     """
-    logger.info("Analyzing the data")
+    logger.debug("Analyzing the data")
     nutriscore_with_outliers_mean, nutriscore_with_outliers_median, \
         nutriscore_with_outliers_max, nutriscore_with_outliers_min = \
         nutriscore_analysis(data_with_outliers)
@@ -134,7 +157,7 @@ def analyze_data(data_with_outliers, data_no_outliers):
     return results
 
 
-def display_histograms(data_with_outliers, data_no_outliers, results):
+def display_histograms(data_with_outliers: pd.DataFrame, data_no_outliers:pd.DataFrame, results: pd.DataFrame):
     """
     Display histograms of the Nutri-Score distribution.
 
@@ -146,7 +169,7 @@ def display_histograms(data_with_outliers, data_no_outliers, results):
     Returns:
         None
     """
-    logger.info("Displaying histograms")
+    logger.debug("Displaying histograms")
     col1, col2 = st.columns(2)
 
     with col1:
@@ -225,7 +248,7 @@ def display_histograms(data_with_outliers, data_no_outliers, results):
         st.divider()
     
 
-def display_distribution_analysis(data_with_outliers, data_no_outliers):
+def display_distribution_analysis(data_with_outliers: pd.DataFrame, data_no_outliers: pd.DataFrame):
     """
     Display the normal distribution analysis of the Nutri-Score : Shapiro-Wilk,
     Kolmogorov-Smirnov and Anderson-Darling tests.
@@ -237,7 +260,7 @@ def display_distribution_analysis(data_with_outliers, data_no_outliers):
     Returns:
     - None
     """
-    logger.info("Displaying distribution analysis")
+    logger.debug("Displaying distribution analysis")
     st.subheader("Analysis of the Nutri-Score distribution")
 
     analysis = st.selectbox(
@@ -305,7 +328,7 @@ def display_distribution_analysis(data_with_outliers, data_no_outliers):
     st.divider()
 
 
-def display_label_distribution(data_with_outliers, data_no_outliers):
+def display_label_distribution(data_with_outliers: pd.DataFrame, data_no_outliers: pd.DataFrame):
     """
     Display the label distribution of the Nutri-Score.
     
@@ -316,7 +339,7 @@ def display_label_distribution(data_with_outliers, data_no_outliers):
     Returns:
     - None
     """
-    logger.info("Displaying label distribution")
+    logger.debug("Displaying label distribution")
     st.subheader("Nutri-Score label distribution")
 
     color_map = {
@@ -371,18 +394,28 @@ def main():
     Main function to run the analysis of the Nutri-Score.
 
     Returns:
-        None
+    - None
+    """
+
+    query1 = """
+    SELECT * FROM "NS_withOutliers";
+    """
+
+    query2 = """
+    SELECT * FROM "NS_noOutliers";
     """
     logger.info("Starting main function")
-    data_with_outliers, data_no_outliers = get_data_outliers()
-
+    data_with_outliers, data_no_outliers = get_cached_data(db_instance,query1,query2,)
     display_header()
     "---"
     results = analyze_data(data_with_outliers, data_no_outliers)
     display_histograms(data_with_outliers, data_no_outliers, results)
     display_distribution_analysis(data_with_outliers, data_no_outliers)
     display_label_distribution(data_with_outliers, data_no_outliers)
-
+    logger.info("Finished main function")
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    finally:
+        db_instance.close_connection()

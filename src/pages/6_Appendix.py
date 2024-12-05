@@ -2,12 +2,21 @@ import streamlit as st
 import pandas as pd
 import logging
 from core.asset_manager import get_asset_path
-from utils.cache_manager import get_data_outliers
+from db.db_instance import db_instance
 
 logger = logging.getLogger("pages.appendix")
 
 
 st.set_page_config(layout="centered")
+
+@st.cache_data
+def get_cached_data(_db_instance, query):
+    logger.debug("Fetching data from the database using db_instance")
+    try:
+        return db_instance.fetch_data(query)
+    except Exception as e:
+        logger.error(f"An error occurred while fetching data: {e}")
+        return None
 
 def display_header():
     st.markdown(
@@ -74,7 +83,7 @@ def display_nutriscore_grid():
     st.image(get_asset_path("images/scale.png"))
 
 
-def display_example_calculation(df2):
+def display_example_calculation(df2: pd.DataFrame):
     st.write("### Example of Nutriscore calculation")
     st.write(
         """
@@ -112,8 +121,8 @@ def display_references():
 
 def main():
     logger.info("Openning Appendix")
-
-    data_with_outliers = get_data_outliers()[0]
+    query = 'SELECT * FROM "NS_withOutliers"'
+    data_with_outliers = get_cached_data(db_instance, query)
 
     display_header()
     display_nutriscore_description()

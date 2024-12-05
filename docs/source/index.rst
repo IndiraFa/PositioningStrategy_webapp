@@ -15,6 +15,5 @@ documentation for details.
    :maxdepth: 5
    :caption: Contents:
 
-   utils/modules
-   pages/modules
+   modules
 
