@@ -5,23 +5,32 @@ import pandas as pd
 import logging
 import numpy as np
 import matplotlib.pyplot as plt
+from db.db_instance import db_instance
+from db.streamlit_todb import Database
 from linear_regression_nutrition import (
     LinearRegressionNutrition,
     calories_per_gram
 )
-current_dir = os.path.dirname(__file__)
-parent_dir = os.path.abspath(os.path.join(current_dir, os.pardir))
-sys.path.append(parent_dir)
-from streamlit_todb import fetch_data_from_db, configs_db
-
 st.set_page_config(layout="centered")
 
-logger = logging.getLogger("app.pages.3_Nutritional_data_quality.log")
+logger = logging.getLogger("pages.Nutritional_data_quality")
 
 
 @st.cache_data
-def get_cached_data(configs_db, query):
-    return fetch_data_from_db(configs_db, query)
+def get_cached_data(_db_instance: Database, query: str):
+    """
+    Fetch data from the database and cache it.
+
+    Args:
+        db_instance: Instance of the database connection.
+        query (str): SQL query to execute.
+
+    Returns:
+        pd.DataFrame: Fetched data.
+    """
+    logger.debug("Fetching data from the database")
+    data = _db_instance.fetch_data(query)
+    return data
 
 
 def write_linear_regression_results(coefficients, intercept, mse, r2):
@@ -253,41 +262,41 @@ def display_confidence_interval_test(lr_nutrition):
 
 
 def main():
-    logger.info("Starting the 3_Nutritional_data_quality script")
+    logger.info("Starting the 3_Nutritional_data_quality")
     query = """
-    SELECT 
-        ns.id,
-        fd.calories,
-        fd."total_fat_%",
-        fd."sugar_%",
-        fd."sodium_%",
-        fd."protein_%",
-        fd."sat_fat_%",
-        fd."carbs_%" 
-    FROM "Formatted_data" fd 
-    INNER JOIN "NS_noOutliers" ns 
-    ON fd.id=ns.id;"""
+        SELECT 
+            ns.id,
+            fd.calories,
+            fd."total_fat_%%",
+            fd."sugar_%%",
+            fd."sodium_%%",
+            fd."protein_%%",
+            fd."sat_fat_%%",
+            fd."carbs_%%" 
+        FROM "Formatted_data" fd 
+        INNER JOIN "NS_noOutliers" ns 
+        ON fd.id = ns.id;
+    """
 
-    filtered_data, _, _, _, _, _ = get_cached_data(configs_db, query)
-    logger.info("Data fectched from the database")
+    print(type(query))
+
+
+    # Fetch data from the database using db_instance
+    filtered_data = get_cached_data(db_instance, query)
 
     features = ['total_fat_%', 'protein_%', 'carbs_%']
     target = 'calories'
 
     logger.info("Doing the linear regression")
-
     lr_nutrition = LinearRegressionNutrition(
             filtered_data,
             target,
             features
         )
-    logger.info("Displaying header")
     display_header()
-    logger.info("Displaying linear regression")
     display_linear_regression(lr_nutrition)
-    logger.info("Displaying confidence intervalle")
     display_confidence_interval_test(lr_nutrition)
-    logger.info("Page 3_Nutritional_data_quality fully loaded")
+
 
 
 if __name__ == "__main__":
