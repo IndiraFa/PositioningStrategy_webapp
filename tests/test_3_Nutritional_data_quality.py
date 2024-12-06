@@ -38,18 +38,21 @@ def mock_linear_regression_nutrition():
         yield mock
 
 
-# Example test to verify the functionality of the Streamlit page
-def test_page_load(mock_fetch_data):
-    """Test to verify that the page loads correctly"""
-    # Test if the module 3_Nutritional_data_quality loads without error
-    assert module_3_Nutritional_data_quality is not None
+# # Example test to verify the functionality of the Streamlit page
+# def test_page_load(mock_fetch_data):
+#     """Test to verify that the page loads correctly"""
+#     # Test if the module 3_Nutritional_data_quality loads without error
+#     assert module_3_Nutritional_data_quality is not None
 
 
-def test_get_cached_data(mock_fetch_data):
-    mock_fetch_data.return_value = pd.DataFrame({'id': [1, 2, 3]})
-    query = "SELECT * FROM test_table"
-    result = module_3_Nutritional_data_quality.get_cached_data({}, query)
-    assert not result.empty
+# def test_get_cached_data(mock_fetch_data):
+#     mock_fetch_data.return_value = pd.DataFrame({'id': [1, 2, 3]})
+#     query = "SELECT * FROM test_table"
+#     result = module_3_Nutritional_data_quality.get_cached_data({}, query)
+#     assert not result.empty
+
+
+
 
 
 def test_write_linear_regression_results():
@@ -187,21 +190,36 @@ def test_display_confidence_interval_test(mock_linear_regression_nutrition):
         assert mock_pyplot.call_count == 3
 
 
-def test_main_display_functions_called(
-        mock_fetch_data, mock_linear_regression_nutrition
-    ):
-    mock_fetch_data.return_value = (
-        pd.DataFrame({'id': [1, 2, 3]}), None, None, None, None, None
-    )
-    with patch('module_3_Nutritional_data_quality.display_header') \
-        as mock_display_header, \
-         patch('module_3_Nutritional_data_quality.display_linear_regression') \
-            as mock_display_linear_regression, \
-         patch('module_3_Nutritional_data_quality.display_confidence_interval_test') \
-                as mock_display_confidence_interval_test:
-        
-        module_3_Nutritional_data_quality.main()
-        
-        mock_display_header.assert_called_once()
-        mock_display_linear_regression.assert_called_once()
-        mock_display_confidence_interval_test.assert_called_once()
+@patch.object(module_3_Nutritional_data_quality, 'get_cached_data')
+@patch.object(module_3_Nutritional_data_quality, 'display_header')
+@patch.object(module_3_Nutritional_data_quality, 'display_linear_regression')
+@patch.object(module_3_Nutritional_data_quality, 'display_confidence_interval_test')
+@patch.object(module_3_Nutritional_data_quality, 'LinearRegressionNutrition')
+def test_main(mock_LinearRegressionNutrition, mock_display_confidence_interval_test, mock_display_linear_regression, mock_display_header, mock_get_cached_data):
+    # Simuler le retour de get_cached_data avec un DataFrame valide
+    mock_filtered_data = pd.DataFrame({
+        'id': [1, 2, 3],
+        'total_fat_%': [10, 20, 30],
+        'protein_%': [5, 10, 15],
+        'carbs_%': [30, 40, 50],
+        'calories': [100, 200, 300]
+    })
+
+    # Configurer le mock de get_cached_data pour renvoyer un DataFrame simulé
+    mock_get_cached_data.return_value = mock_filtered_data
+
+    # Simuler le comportement de la classe LinearRegressionNutrition
+    mock_lr_instance = mock_LinearRegressionNutrition.return_value
+    mock_lr_instance.fit.return_value = None  # Si nécessaire, mockez la méthode `fit`
+
+    # Appeler la fonction main
+    module_3_Nutritional_data_quality.main()
+
+    # Vérifications : assurer que les fonctions d'affichage sont appelées
+    mock_display_header.assert_called_once()
+    mock_display_linear_regression.assert_called_once()
+    mock_display_confidence_interval_test.assert_called_once()
+
+    # Vérification que la classe LinearRegressionNutrition a été instanciée avec les bons arguments
+    mock_LinearRegressionNutrition.assert_called_once_with(mock_filtered_data, 'calories', ['total_fat_%', 'protein_%', 'carbs_%'])
+

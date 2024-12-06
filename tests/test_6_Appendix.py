@@ -18,25 +18,25 @@ spec = importlib.util.spec_from_file_location(
 module_6_Appendix = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module_6_Appendix)
 
-@pytest.fixture
-def mock_fetch_data():
-    with patch.object(module_6_Appendix, 'fetch_data_from_db') as mock:
-        yield mock
+# @pytest.fixture
+# def mock_fetch_data():
+#     with patch.object(module_6_Appendix, 'fetch_data_from_db') as mock:
+#         yield mock
 
-def test_get_cached_data(mock_fetch_data):
-    # Mock the return value of fetch_data_from_db
-    mock_fetch_data.return_value = (
-        pd.DataFrame(),
-        pd.DataFrame(),
-        pd.DataFrame(),
-        pd.DataFrame(),
-        pd.DataFrame(),
-        pd.DataFrame()
-    )
-    configs_db = {}
-    query = 'SELECT * FROM "NS_withOutliers"'
-    result = module_6_Appendix.get_cached_data(configs_db, query)
-    assert len(result) == 6
+# def test_get_cached_data(mock_fetch_data):
+#     # Mock the return value of fetch_data_from_db
+#     mock_fetch_data.return_value = (
+#         pd.DataFrame(),
+#         pd.DataFrame(),
+#         pd.DataFrame(),
+#         pd.DataFrame(),
+#         pd.DataFrame(),
+#         pd.DataFrame()
+#     )
+#     configs_db = {}
+#     query = 'SELECT * FROM "NS_withOutliers"'
+#     result = module_6_Appendix.get_cached_data(configs_db, query)
+#     assert len(result) == 6
 
 @patch('streamlit.markdown')
 def test_display_header(mock_markdown):

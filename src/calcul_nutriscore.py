@@ -149,42 +149,42 @@ class NutriScore:
         
         return score
 
-    def stock_database(self):
-        """
-        Stores the NutriScore data in a PostgreSQL database.
+    # def stock_database(self):
+    #     """
+    #     Stores the NutriScore data in a PostgreSQL database.
 
-        Parameters
-        ----------
-        None
+    #     Parameters
+    #     ----------
+    #     None
 
-        Returns
-        -------
-        None
+    #     Returns
+    #     -------
+    #     None
 
-        Raises
-        ------
-        Exception
-            If an error occurs while storing the data in the database.        
-        """
-        secrets = toml.load('secrets.toml')
-        postgresql_config = secrets['connections']['postgresql']
-        try:
-            # Establish a database connection
-            engine = create_engine(f'postgresql://{postgresql_config["username"]}:{postgresql_config["password"]}'
-                                   f'@{postgresql_config["host"]}:{postgresql_config["port"]}/{postgresql_config["database"]}')
-            with engine.connect() as conn:
-                # Save the NutriScore data to the database
-                self.nutriscore_label.to_sql(
-                    'NS_withOutliers',
-                    conn,
-                    if_exists='replace',
-                    index=False
-                )
-                logging.info(
-                    "NutriScore data successfully stored in the database."
-                )
-        except Exception as e:
-            logging.error(f"Error storing data in the database: {e}")
+    #     Raises
+    #     ------
+    #     Exception
+    #         If an error occurs while storing the data in the database.        
+    #     """
+    #     secrets = toml.load('secrets.toml')
+    #     postgresql_config = secrets['connections']['postgresql']
+    #     try:
+    #         # Establish a database connection
+    #         engine = create_engine(f'postgresql://{postgresql_config["username"]}:{postgresql_config["password"]}'
+    #                                f'@{postgresql_config["host"]}:{postgresql_config["port"]}/{postgresql_config["database"]}')
+    #         with engine.connect() as conn:
+    #             # Save the NutriScore data to the database
+    #             self.nutriscore_label.to_sql(
+    #                 'NS_withOutliers',
+    #                 conn,
+    #                 if_exists='replace',
+    #                 index=False
+    #             )
+    #             logging.info(
+    #                 "NutriScore data successfully stored in the database."
+    #             )
+    #     except Exception as e:
+    #         logging.error(f"Error storing data in the database: {e}")
 
 
 class Plot:

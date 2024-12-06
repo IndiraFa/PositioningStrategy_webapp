@@ -114,7 +114,7 @@ def test_display_interaction_correlation(
     assert mock_dataframe.call_count > 0
 
 
-@patch.object(correlations, 'fetch_data_from_db')
+@patch.object(correlations, 'get_cached_data')
 @patch.object(correlations, 'display_header')
 @patch.object(correlations, 'display_recipe_correlation')
 @patch.object(correlations, 'display_interaction_correlation')
@@ -122,20 +122,24 @@ def test_main(
     mock_display_interaction_correlation,
     mock_display_recipe_correlation,
     mock_display_header,
-    mock_fetch_data_from_db,
-    mock_filtered_data,
-    mock_interaction_data,
-    mock_nutriscore_data
+    mock_get_cached_data
 ):
-    mock_fetch_data_from_db.return_value = (
-        mock_filtered_data,
-        mock_interaction_data,
-        mock_nutriscore_data,
-        None,
-        None,
-        None
-    )
+    # Créer des mocks pour les données simulées (par exemple, des DataFrames vides ou fictifs)
+    mock_filtered_data = {"dummy_column": [1, 2, 3]}
+    mock_interaction_data = {"dummy_column": [4, 5, 6]}
+    mock_nutriscore_data = {"dummy_column": [7, 8, 9]}
+
+    # Configurer le mock de get_cached_data pour renvoyer un dictionnaire plutôt qu'un tuple
+    mock_get_cached_data.return_value = {
+        "filtered_data": mock_filtered_data,
+        "raw_interactions": mock_interaction_data,
+        "nutriscore": mock_nutriscore_data,
+    }
+
+    # Appeler la fonction main
     correlations.main()
+
+    # Vérifier que les fonctions display_* ont été appelées correctement
     assert mock_display_header.call_count == 1
     assert mock_display_recipe_correlation.call_count == 1
     assert mock_display_interaction_correlation.call_count == 1
