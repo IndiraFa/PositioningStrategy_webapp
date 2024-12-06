@@ -6,6 +6,7 @@ import sys, os
 import argparse
 import logging
 import scipy.stats as stats
+from functools import reduce
 import toml
 import streamlit as st
 from db.db_instance import db_instance
