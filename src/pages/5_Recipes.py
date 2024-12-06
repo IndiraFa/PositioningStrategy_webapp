@@ -58,7 +58,7 @@ def display_choosing_labels(all_recipes_proccessed, all_recipes):
                     the each nutrition. 
                     And the bar chart representes the distribution of the 
                     nutrition, compared to the reference values. 
-                    """)
+                    """, unsafe_allow_html=True)
         
     txt = st.warning(
         f'Statistical description of the recipes with the {choix} label') 
