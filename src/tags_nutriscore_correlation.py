@@ -271,8 +271,9 @@ def main(arg):
     # get recipes with tags target
     tags_instance = Tags(new_data_tags, tags_reference)
     ids_recipes_target = np.array(tags_instance.get_recipes_from_tags())
-    logger.info('number of recipes with tags target:', len(ids_recipes_target))
-
+    logger.info(
+        'number of recipes with tags target: %d', len(ids_recipes_target)
+        )
     try:
         len(ids_recipes_target) > len(tags_reference.split(','))
         # convert to pandas series or to list of integer values
