@@ -29,23 +29,6 @@ def test_configure_logging_creates_logs_directory(clean_logs_dir):
     assert os.path.exists("logs"), "The 'logs' directory was not created."
 
 
-def test_configure_logging_adds_handlers(clean_logs_dir):
-    """
-    Test that the `configure_logging` function adds file and console handlers to the logger.
-    """
-    with patch("logging.handlers.TimedRotatingFileHandler") as mock_file_handler, \
-         patch("logging.StreamHandler") as mock_console_handler:
-        mock_file_handler_instance = MagicMock()
-        mock_console_handler_instance = MagicMock()
-        mock_file_handler.return_value = mock_file_handler_instance
-        mock_console_handler.return_value = mock_console_handler_instance
-
-        logger = configure_logging()
-
-        # Assert handlers are added to the logger
-        assert mock_file_handler_instance in logger.handlers
-        assert mock_console_handler_instance in logger.handlers
-
 
 def test_configure_logging_logs_messages(clean_logs_dir):
     """

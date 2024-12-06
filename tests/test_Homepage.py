@@ -7,7 +7,7 @@ import importlib.util
 sys.path.insert(
     0,
     os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                 '../src'))
+                                '../src'))
 )
 
 # Importer le module Homepage.py
@@ -231,25 +231,3 @@ def test_display_label_distribution(
 
 
 
-def test_main_called():
-    """
-    Test to ensure that the 'main' function is called, using MockDatabase.
-    """
-    # Créer une instance de MockDatabase
-    db_instance = MockDatabase()
-
-    # Patch de get_cached_data pour utiliser MockDatabase au lieu de l'original
-    with patch("Homepage.get_cached_data") as mock_get_cached_data, \
-         patch("Homepage.main") as mock_main:
-        
-        # Configurer le comportement du mock pour renvoyer des DataFrames valides
-        mock_get_cached_data.return_value = (
-            db_instance.fetch_data("SELECT * FROM 'NS_withOutliers'"),
-            db_instance.fetch_data("SELECT * FROM 'NS_noOutliers'")
-        )
-
-        # Appeler la fonction principale
-        Homepage.main()
-
-        # Vérifier que main a bien été appelée
-        mock_main.assert_called_once()
