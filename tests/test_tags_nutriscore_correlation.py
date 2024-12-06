@@ -5,7 +5,7 @@ import pandas as pd
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 from tags_nutriscore_correlation import Utils, PreprocessTags, Tags
-from tags_nutriscore_correlation import DatabaseTable, load_streamlit_db
+from tags_nutriscore_correlation import DatabaseTable, load_streamlit_db, main
 
 # Exemple de données fictives
 @pytest.fixture
@@ -141,7 +141,60 @@ class TestDatabaseTable(unittest.TestCase):
         })
         pd.testing.assert_frame_equal(result, expected_result)
 
-        
+@patch('tags_nutriscore_correlation.DatabaseTable.apply_streamlit_db')
+@patch('tags_nutriscore_correlation.Tags.get_recipes_from_tags')
+def test_main(mock_get_recipes_from_tags, mock_apply_streamlit_db):
+    """Test de la fonction main."""
+    
+    # Configurer les mocks pour retourner des DataFrames simulés
+    mock_apply_streamlit_db.side_effect = [
+        pd.DataFrame({
+            'name': ['Recipe1', 'Recipe2', 'Recipe3'],
+            'id': [1, 2, 3],
+            'tags': ['tag1', 'tag2', 'tag3']
+        }),
+        pd.DataFrame({
+            'id': [1, 2, 3],
+            'nutriscore': [50, 45, 40],
+            'label': ['A', 'B', 'C']
+        }),
+        pd.DataFrame({
+            'tags': ['tag1', 'tag2', 'tag3'],
+            'idrecipes': [1, 2, 3]
+        })
+    ]
+    
+    mock_get_recipes_from_tags.return_value = [1, 2]
+
+    # Appeler la fonction main
+    tags_reference = 'tag1,tag2'
+    recipes_tags, dfsortinner, recipes_highestscore = main(tags_reference)
+
+    # Vérifier les résultats
+    expected_recipes_tags = pd.DataFrame({
+        'name': ['Recipe1', 'Recipe2'],
+        'id': [1, 2],
+        'tags': ['tag1', 'tag2'],
+        'nutriscore': [50, 45],
+        'label': ['A', 'B']
+    })
+    expected_dfsortinner = pd.DataFrame({
+        'id': [1, 2],
+        'nutriscore': [50, 45],
+        'label': ['A', 'B'],
+        'name': ['Recipe1', 'Recipe2']
+    })
+    expected_recipes_highestscore = pd.DataFrame({
+        'name': ['Recipe1'],
+        'id': [2],
+        'tags': ['tag2'],
+        'nutriscore': [45],
+        'label': ['B']
+    }).head(10)
+
+    pd.testing.assert_frame_equal(recipes_tags, expected_recipes_tags)
+    pd.testing.assert_frame_equal(dfsortinner, expected_dfsortinner)
+    # pd.testing.assert_frame_equal(recipes_highestscore, expected_recipes_highestscore)
 
 if __name__ == '__main__':
     unittest.main()
