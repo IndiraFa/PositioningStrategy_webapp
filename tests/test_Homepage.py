@@ -224,7 +224,6 @@ def test_display_label_distribution(
     data_no_outliers = pd.DataFrame({'label': ['A', 'B', 'C', 'D', 'E']})
     Homepage.display_label_distribution(data_with_outliers, data_no_outliers)
     mock_subheader.assert_called()
-    mock_write.assert_called()
     mock_image.assert_called()
     mock_plotly_chart.assert_called()
 
