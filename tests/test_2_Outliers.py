@@ -4,14 +4,6 @@ import pytest
 import pandas as pd
 from unittest.mock import patch, MagicMock
 import importlib.util
-
-# Add the source path to import necessary modules
-sys.path.insert(
-    0,
-    os.path.abspath(os.path.join(os.path.dirname(__file__), '../src'))
-)
-
-from utils.config_logging import configure_logging
 import logging
 
 
