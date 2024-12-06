@@ -9,8 +9,25 @@ logger = logging.getLogger("pages.appendix")
 
 st.set_page_config(layout="centered")
 
+
 @st.cache_data
 def get_cached_data(_db_instance, query):
+    """
+    Get data from the database using the db_instance object
+
+    Parameters
+    ----------
+    _db_instance: db_instance
+        The database instance object
+
+    query: str
+        The query to fetch the data from the database
+
+    Returns
+    -------
+    pd.DataFrame
+        The data fetched from the database
+    """
     logger.debug("Fetching data from the database using db_instance")
     try:
         return db_instance.fetch_data(query)
@@ -18,18 +35,34 @@ def get_cached_data(_db_instance, query):
         logger.error(f"An error occurred while fetching data: {e}")
         return None
 
+
 def display_header():
+    """
+    Display the header of the page, with the title "Appendix"
+
+    Returns
+    -------
+    None
+    """
     st.markdown(
         "<h1 style='color:purple;'>Appendix</h1>",
         unsafe_allow_html=True
     )
+    logger.debug("Header displayed")
 
 
 def display_nutriscore_description():
+    """
+    Display the description of the Nutriscore calculation
+
+    Returns
+    -------
+    None
+    """
     st.write(
         """
         ## Nutriscore calculation
-        We built a Nutrition Score based on **daily value intake 
+        We built a Nutrition Score based on **daily value intake
         recommandations** 
         (ref) and on available data from the recipes.<br>
         Starting from the **maximum value of 14**, the Nutri-Score decreases as
@@ -52,9 +85,18 @@ def display_nutriscore_description():
         """,
         unsafe_allow_html=True,
     )
+    logger.debug("Nutriscore description displayed")
 
 
 def display_nutriscore_grid():
+    """
+    Display a text description of the Nutriscore calculation grid then display
+    the grid itself and the letter grade scale.
+
+    Returns
+    -------
+    None
+    """
     csv_file_path = get_asset_path("data/nutrient_table.csv")
     df = pd.read_csv(csv_file_path)
 
@@ -72,7 +114,9 @@ def display_nutriscore_grid():
         """,
         unsafe_allow_html=True,
     )
+    logger.debug("Nutriscore description displayed")
     st.dataframe(df)
+    logger.debug("Nutriscore grid displayed")
     st.write(
         """
         For an easier interpretation, the Nutriscore is then converted into a 
@@ -81,9 +125,22 @@ def display_nutriscore_grid():
         """
     )
     st.image(get_asset_path("images/scale.png"))
+    logger.debug("Nutriscore letter grade scale displayed")
 
 
 def display_example_calculation(df2: pd.DataFrame):
+    """
+    Display an example of the Nutriscore calculation for a specific recipe.
+
+    Parameters
+    ----------
+    df2: pd.DataFrame
+        The DataFrame containing the nutritional values of the recipe
+
+    Returns
+    -------
+    None
+    """
     st.write("### Example of Nutriscore calculation")
     st.write(
         """
@@ -91,10 +148,11 @@ def display_example_calculation(df2: pd.DataFrame):
         of the Creamy chicken curry with the following nutritional values:
         """
     )
-
+    logger.debug("Example of Nutriscore calculation displayed")
     recipe_id = 137434  
     specific_row = df2.loc[df2["id"] == recipe_id]
     st.dataframe(specific_row)
+    logger.debug(f"Nutritional values displayed : {specific_row}")
     st.write(
         """
         **Calculation**: Nutriscore = 14 - 0 (calories) - 0 (saturated fat) - 
@@ -103,9 +161,17 @@ def display_example_calculation(df2: pd.DataFrame):
         """,
         unsafe_allow_html=True,
     )
+    logger.debug("Example of Nutriscore calculation displayed")
 
 
 def display_references():
+    """
+    Display the references used for the Nutriscore calculation
+
+    Returns
+    -------
+    None
+    """
     st.write(
         """
         ### References
@@ -117,9 +183,17 @@ def display_references():
         """,
         unsafe_allow_html=True,
     )
+    logger.debug("References displayed")
 
 
 def main():
+    """
+    Main function to display the appendix of the project
+
+    Returns
+    -------
+    None
+    """
     logger.info("Openning Appendix")
     query = 'SELECT * FROM "NS_withOutliers"'
     data_with_outliers = get_cached_data(db_instance, query)
@@ -129,6 +203,7 @@ def main():
     display_nutriscore_grid()
     display_example_calculation(data_with_outliers)
     display_references()
+    logger.info("Appendix page fully displayed")
 
 
 if __name__ == "__main__":
