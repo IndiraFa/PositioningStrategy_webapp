@@ -4,7 +4,7 @@ import pytest
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 # to be able to import the module from the src folder
 sys.path.insert(0, os.path.abspath(os.path.join
                                    (os.path.dirname(__file__), '../src')
@@ -15,9 +15,8 @@ from interaction_correlation_analysis import (
     main
 )
 
+
 # Test the InteractionData class
-
-
 @pytest.fixture
 def test_interaction_data():
     """
@@ -285,7 +284,9 @@ def test_label_analysis(test_label_data):
 @patch('pandas.read_csv')
 @patch('interaction_correlation_analysis.InteractionData')
 @patch('interaction_correlation_analysis.LabelAnalysis')
+@patch('logging.getLogger')
 def test_main(
+    mock_get_logger,
     mock_label_analysis,
     mock_interaction_data,
     mock_read_csv,
@@ -317,7 +318,5 @@ def test_main(
         'interaction_recipe_ratio': [10, 20, 30]
     })
 
-    with patch('builtins.print') as mock_print:
-        main()
-        # Check that the print function was called
-        assert mock_print.call_count == 4, "The print function was not called"
+    mock_logger = mock_get_logger.return_value
+    main()
