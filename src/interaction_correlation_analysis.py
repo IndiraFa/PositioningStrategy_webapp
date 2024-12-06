@@ -1,8 +1,9 @@
+import logging
 from functools import reduce
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-import logging
+
 
 logger = logging.getLogger("interaction_correlation_analysis")
 
@@ -11,37 +12,61 @@ class InteractionData:
     """
     Class to analyze the interaction data.
 
-    Attributes:
-    - data: DataFrame, the interaction data.
+    Parameters
+    ----------
+    data: pd.DataFrame
+        The interaction data.
 
-    Methods:
-    - interactions_df: Compute the number of interactions, reviews, ratings and
-    average rating for each recipe.
-    - merge_interaction_nutriscore: Merge the interaction data and the
-    nutriscore data.
-    - interaction_correlation_matrix: Calculate the correlation matrix of a
-    DataFrame, for chosen columns.
-    - plot_interaction_correlation_matrix: Plot the correlation matrix of the
-    data.
+    Methods
+    -------
+    interactions_df()
+        Compute the number of interactions, reviews, ratings and average rating
+        for each recipe.
+    merge_interaction_nutriscore()
+        Merge the interaction data and the nutriscore data.
+    interaction_correlation_matrix()
+        Calculate the correlation matrix of a DataFrame, for chosen columns.
+    plot_interaction_correlation_matrix()
+        Plot the correlation matrix of the data.
     """
     def __init__(self, path=None, data=None):
+        """
+        Method to initialize the class.
+
+        Parameters
+        ----------
+        path: str
+            The path to the data file.
+        data: pd.DataFrame
+            The data to analyze.
+
+        Returns
+        -------
+        None
+        """
         if path is not None:
             self.data = pd.read_csv(path, sep=',')
+            logger.info(f"Data loaded from {path}.")
         else:
             self.data = data
-       
+            logger.info("Data provided directly.")
 
     def interactions_df(self):
         """
         Compute the number of interactions, reviews, ratings and average rating
         for each recipe.
 
-        Parameters:
-        - data: DataFrame, the interaction data.
+        Parameters
+        ----------
+        data: DataFrame
+            The interaction data.
 
-        Returns:
-        - result: DataFrame, the result of the computation.
+        Returns
+        -------
+        result: DataFrame
+            The result of the computation.
         """
+        logger.debug("Starting interactions_df computation.")
         data_filtered = self.data.dropna(subset=['rating', 'review'])
         interaction_count = (
             data_filtered
@@ -49,6 +74,8 @@ class InteractionData:
             .size()
             .reset_index(name='interaction_count')
         )
+        logger.debug(f"Interaction count computed: {interaction_count.head()}")
+
         review_count = (
             data_filtered
             .groupby('recipe_id')['rating']
@@ -69,49 +96,72 @@ class InteractionData:
         )
 
         dfs = [interaction_count, review_count, rating_count, average_rating]
+        logger.debug(f"Merging dataframes: {[df.shape for df in dfs]}")
 
         result = reduce(
             lambda left,
             right: pd.merge(left, right, on='recipe_id'),
             dfs
         )
+        logger.info("Interactions dataframe created successfully.")
         return result
 
     def merge_interaction_nutriscore(self, nutriscore_data, columns_to_keep):
         """
         Merge the interaction data and the nutriscore data.
 
-        Parameters:
-        - interaction_data: DataFrame, the interaction data.
-        - nutriscore_data: DataFrame, the nutriscore data.
+        Parameters
+        ----------
+        nutriscore_data: DataFrame
+            The nutriscore data.
+        columns_to_keep: list
+            The columns to keep in the merged data.
 
-        Returns:
-        - merged_data: DataFrame, the merged data.
+        Returns
+        ------
+        filtered_data: DataFrame
+            The merged data.
         """
-        interaction_data = self.interactions_df()
-        merged_data = pd.merge(
-            interaction_data,
-            nutriscore_data,
-            left_on='recipe_id',
-            right_on='id'
-        )
+        try:
+            logger.debug("Merging interaction data with nutriscore data.")
+            interaction_data = self.interactions_df()
+            merged_data = pd.merge(
+                interaction_data,
+                nutriscore_data,
+                left_on='recipe_id',
+                right_on='id'
+            )
+            logger.debug(f"Merged data shape: {merged_data.shape}")
 
-        filtered_data = merged_data[columns_to_keep]
-        return filtered_data
+            filtered_data = merged_data[columns_to_keep]
+            logger.info(f"Filtered data with columns: {columns_to_keep}.")
+            return filtered_data
+        except KeyError as e:
+            logger.error(f"Missing key in data: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"An error occurred while merging data: {e}")
+            raise
 
     def interaction_correlation_matrix(self, merged_data, columns_of_interest):
         """
         Calculate the correlation matrix of a DataFrame, for chosen columns.
 
-        Parameters:
-        - data: DataFrame, the data to calculate the correlation matrix.
-        - columns_of_interest: list, the columns to include in the correlation
-        matrix.
+        Parameters
+        ----------
+        merged_data: DataFrame
+            The data to calculate the correlation matrix.
+        columns_of_interest: list
+            The columns to include in the correlation matrix.
 
-        Returns:
-        - correlation_matrix: DataFrame, the correlation matrix of the data.
+        Returns
+        -------
+        correlation_matrix: DataFrame
+            The correlation matrix of the data.
         """
+        logger.debug("Calculating correlation matrix.")
         matrix = merged_data[columns_of_interest].corr()
+        logger.debug(f"Correlation matrix calculated: {matrix.head()}")
         return matrix
 
     def plot_interaction_correlation_matrix(
@@ -121,7 +171,19 @@ class InteractionData:
     ):
         """
         Plot the correlation matrix of the data.
+
+        Parameters
+        ----------
+        merged_data: DataFrame
+            The data to plot.
+        columns_of_interest: list
+            The columns to include in the correlation matrix.
+
+        Returns
+        -------
+        None
         """
+        logger.debug("Plotting interaction correlation matrix.")
         plt.figure(figsize=(12, 8))
         corr_matrix = self.interaction_correlation_matrix(
             merged_data,
@@ -130,14 +192,17 @@ class InteractionData:
         sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt='.2f')
         plt.title('Correlation matrix')
         plt.show()
+        logger.info("Correlation matrix plot displayed.")
 
 
 class LabelAnalysis:
     """
     Class to analyze the labels.
 
-    Methods:
-    - label_analysis: Compute the average rating, the number of interactions,
+    Methods
+    ------
+    label_analysis(data)
+        Compute the average rating, the number of interactions,
     the number of recipes and the interaction/recipe ratio for each label.
     """
     @staticmethod
@@ -146,11 +211,15 @@ class LabelAnalysis:
         Compute the average rating, the number of interactions, the number of
         recipes and the interaction/recipe ratio for each label.
 
-        Parameters:
-        - data: DataFrame, the merged data.
+        Parameters
+        ----------
+        data: DataFrame
+            The data to analyze.
 
-        Returns:
-        - merged_counts: DataFrame, the result of the computation
+        Returns
+        -------
+        merged_counts: DataFrame
+            The result of the computation.
         """
         averate_rating_per_label = (
             data
@@ -190,6 +259,14 @@ class LabelAnalysis:
 
 
 def main():
+    """
+    Main function to analyze the interaction data.
+
+    Returns
+    -------
+    None
+    """
+    logger.info("Starting main function")
     path_interaction = './datasets/RAW_interactions.csv'
     path_nutriscore = './datasets/nutrition_table_nutriscore_no_outliers.csv'
     nutriscore_data = pd.read_csv(path_nutriscore, sep=',')
@@ -215,15 +292,16 @@ def main():
         columns_of_interest
     )
 
-    print(result.head())
-    print(merged_data.head())
-    print(label_analysis_result)
-    print(corr_mat)
+    logger.debug(result.head())
+    logger.debug(merged_data.head())
+    logger.debug(label_analysis_result)
+    logger.debug(corr_mat)
 
     interaction_data.plot_interaction_correlation_matrix(
         merged_data,
         columns_of_interest
     )
+    logger.info("Finished main function")
 
 
 if __name__ == '__main__':
