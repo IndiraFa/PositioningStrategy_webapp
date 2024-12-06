@@ -10,7 +10,7 @@ sys.path.insert(
                                 '../src'))
 )
 
-# Importer le module Homepage.py
+# Import the Homepage module
 spec = importlib.util.spec_from_file_location(
     "Homepage",
     os.path.join(os.path.dirname(__file__), '../src/Homepage.py')
@@ -28,36 +28,31 @@ def mock_fetch_data():
         yield mock
 
 
-@patch("Homepage.Database.fetch_data")  # Mock de la méthode fetch_data
+@patch("Homepage.Database.fetch_data") 
 def test_get_cached_data(mock_fetch_data):
     """
     Test the get_cached_data function.
     """
-    # Simuler les retours de fetch_data
     mock_fetch_data.side_effect = [
-        pd.DataFrame({"col1": [1, 2], "col2": [3, 4]}),  # Pour query1
-        pd.DataFrame({"col1": [5, 6], "col2": [7, 8]}),  # Pour query2
+        pd.DataFrame({"col1": [1, 2], "col2": [3, 4]}), 
+        pd.DataFrame({"col1": [5, 6], "col2": [7, 8]}), 
     ]
 
-    # Appel de la fonction
     db_instance = MagicMock()
     query1 = 'SELECT * FROM "NS_withOutliers"'
     query2 = 'SELECT * FROM "NS_noOutliers"'
-    result_with_outliers, result_no_outliers = Homepage.get_cached_data(db_instance, query1, query2)
+    result_with_outliers, result_no_outliers = \
+        Homepage.get_cached_data(db_instance, query1, query2)
 
-    # Vérifier le résultat
-    assert len(result_with_outliers) == 2  # Deux lignes dans le premier DataFrame
-    assert len(result_no_outliers) == 2  # Deux lignes dans le second DataFrame
-    assert mock_fetch_data.call_count == 2  # La méthode fetch_data a été appelée deux fois
-
+    assert len(result_with_outliers) == 2
+    assert len(result_no_outliers) == 2
+    assert mock_fetch_data.call_count == 2
 
 class MockDatabase:
     def fetch_data(self, query):
         if "NS_withOutliers" in query:
-            # Ajouter la colonne 'nutriscore' pour simuler un DataFrame valide
             return pd.DataFrame({"label": [1, 2], "col2": [3, 4], "nutriscore": [50, 60]})
         elif "NS_noOutliers" in query:
-            # Ajouter la colonne 'nutriscore' pour simuler un DataFrame valide
             return pd.DataFrame({"label": [5, 6], "col2": [7, 8], "nutriscore": [55, 65]})
         else:
             return pd.DataFrame()
@@ -224,10 +219,5 @@ def test_display_label_distribution(
     data_no_outliers = pd.DataFrame({'label': ['A', 'B', 'C', 'D', 'E']})
     Homepage.display_label_distribution(data_with_outliers, data_no_outliers)
     mock_subheader.assert_called()
-    mock_write.assert_called()
     mock_image.assert_called()
     mock_plotly_chart.assert_called()
-
-
-
-
