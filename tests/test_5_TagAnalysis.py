@@ -11,9 +11,9 @@ import importlib.util
 
 # Import module 6_Appendix.py
 spec = importlib.util.spec_from_file_location(
-    "module_5_Recipes",
+    "module_5_TagAnalysis",
     os.path.join(os.path.dirname(__file__),
-                 '../src/pages/5_Recipes.py')
+                 '../src/pages/5_TagAnalysis.py')
 )
 app = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(app)
