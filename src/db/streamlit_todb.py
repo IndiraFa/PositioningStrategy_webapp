@@ -8,8 +8,8 @@ logger = logging.getLogger("db.streamlit_todb")
 class Database:
     def __init__(self):
         """
-        Initialise une instance de connexion à la base de données en utilisant SQLAlchemy.
-        Les configurations sont récupérées depuis les secrets Streamlit.
+        Initialize a database connection using SQLAlchemy.
+        Configurations are retrieved from Streamlit secrets.
         """
         configs = {
             "db_host": st.secrets["connections"]["postgresql"]["host"],
@@ -24,35 +24,34 @@ class Database:
         )
         logger.info("Database connection initialized")
 
-    def fetch_data(self, query):
+    def fetch_data(self, query: str) -> pd.DataFrame:
         """
-        Exécute une requête SQL et retourne les résultats dans un DataFrame.
+        Execute a SQL query and return the results in a DataFrame.
 
         Parameters:
-        - query: str, la requête SQL
+            query (str): The SQL query to execute.
 
         Returns:
-        - pd.DataFrame: Les résultats de la requête ou None en cas d'erreur.
+            pd.DataFrame: The query results as a DataFrame, or None if an error occurs.
         """
         try:
             logger.debug(f"Executing query: {query}")
             data = pd.read_sql_query(query, self.engine)
-            logger.info(f"Result: {data}")
+            logger.info(f"Query executed successfully: {query}")
             return data
         except Exception as e:
-            logger.debug(f"An error occurred while executing the query: {e}")
-            # st.error(f"An error occurred while executing the query: {e}")
+            logger.error(f"An error occurred while executing the query: {e}")
             return None
 
-    def fetch_multiple(self, *queries):
+    def fetch_multiple(self, *queries: str) -> tuple:
         """
-        Exécute plusieurs requêtes SQL et retourne leurs résultats.
+        Execute multiple SQL queries and return their results.
 
         Parameters:
-        - *queries: liste des requêtes SQL à exécuter
+            *queries (str): A variable number of SQL queries to execute.
 
         Returns:
-        - tuple: Les DataFrames résultants pour chaque requête (None si une requête échoue).
+            tuple: A tuple of DataFrames for each query (None for any query that fails).
         """
         results = []
         for query in queries:
@@ -62,15 +61,15 @@ class Database:
                 if isinstance(df, pd.DataFrame):
                     results.append(df)
                 else:
-                    logger.error(f"Query failed, did not return a DataFrame: {query}")
+                    logger.error(f"Query failed: {query}")
                     results.append(None)
             else:
                 results.append(None)
         return tuple(results)
 
-    def close_connection(self):
+    def close_connection(self) -> None:
         """
-        Ferme la connexion à la base de données.
+        Close the database connection.
         """
         self.engine.dispose()
         logger.debug("Database connection closed.")
