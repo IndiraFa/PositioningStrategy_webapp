@@ -1,8 +1,11 @@
 import pytest
+import unittest
+from unittest.mock import patch
 import pandas as pd
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 from tags_nutriscore_correlation import Utils, PreprocessTags, Tags
+from tags_nutriscore_correlation import DatabaseTable, load_streamlit_db
 
 # Exemple de données fictives
 @pytest.fixture
@@ -64,3 +67,51 @@ def test_get_recipes_from_tags_multiple_tags(formatted_tags_data):
     tag_handler = Tags(formatted_tags_data, 'course,meat')
     ids = tag_handler.get_recipes_from_tags()
     assert ids == [3]
+
+def test_database_table_init():
+    """Test du constructeur de la classe DatabaseTable."""
+    
+    # Créer une instance de DatabaseTable
+    table_name = 'test_table'
+    query = 'SELECT * FROM test_table;'
+    data = None
+    db_table = DatabaseTable(table_name, query, data)
+
+    # Vérifier que les attributs sont correctement initialisés
+    assert db_table.table_name == table_name
+    assert db_table.query == query
+    assert db_table.data == data
+
+
+
+class TestTagsNutriscoreCorrelation(unittest.TestCase):
+
+    @patch('tags_nutriscore_correlation.db_instance.fetch_data')
+    def test_load_streamlit_db(self, mock_fetch_data):
+        """Test de la fonction load_streamlit_db."""
+        
+        # Configurer le mock pour retourner un DataFrame simulé
+        mock_fetch_data.return_value = pd.DataFrame({
+            'id': [1, 2, 3],
+            'name': ['Recipe1', 'Recipe2', 'Recipe3'],
+            'tags': ['tag1', 'tag2', 'tag3']
+        })
+
+        # Appeler la fonction load_streamlit_db
+        result = load_streamlit_db('raw_recipes')
+
+        # Vérifier que fetch_data a été appelé avec la bonne requête
+        mock_fetch_data.assert_called_once_with('SELECT * FROM "raw_recipes";')
+
+        # Vérifier que le résultat est un DataFrame et contient les données attendues
+        expected_result = pd.DataFrame({
+            'id': [1, 2, 3],
+            'name': ['Recipe1', 'Recipe2', 'Recipe3'],
+            'tags': ['tag1', 'tag2', 'tag3']
+        })
+        pd.testing.assert_frame_equal(result, expected_result)
+
+        
+
+if __name__ == '__main__':
+    unittest.main()
