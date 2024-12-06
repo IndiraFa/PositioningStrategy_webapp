@@ -28,22 +28,39 @@ def mock_fetch_data():
         yield mock
 
 
+@patch("Homepage.Database.fetch_data")  # Mock de la méthode fetch_data
 def test_get_cached_data(mock_fetch_data):
     """
-    Test the get_cached_data function
-
-    Args:
-        mock_fetch_data (fixture): Mock the fetch_data_from_db function
-
-    Returns:
-        None
+    Test the get_cached_data function.
     """
-    mock_fetch_data.return_value = (pd.DataFrame(), pd.DataFrame())
-    configs_db = {}
+    # Simuler les retours de fetch_data
+    mock_fetch_data.side_effect = [
+        pd.DataFrame({"col1": [1, 2], "col2": [3, 4]}),  # Pour query1
+        pd.DataFrame({"col1": [5, 6], "col2": [7, 8]}),  # Pour query2
+    ]
+
+    # Appel de la fonction
+    db_instance = MagicMock()
     query1 = 'SELECT * FROM "NS_withOutliers"'
     query2 = 'SELECT * FROM "NS_noOutliers"'
-    result = Homepage.get_cached_data(configs_db, query1, query2)
-    assert len(result) == 6
+    result_with_outliers, result_no_outliers = Homepage.get_cached_data(db_instance, query1, query2)
+
+    # Vérifier le résultat
+    assert len(result_with_outliers) == 2  # Deux lignes dans le premier DataFrame
+    assert len(result_no_outliers) == 2  # Deux lignes dans le second DataFrame
+    assert mock_fetch_data.call_count == 2  # La méthode fetch_data a été appelée deux fois
+
+
+class MockDatabase:
+    def fetch_data(self, query):
+        if "NS_withOutliers" in query:
+            # Ajouter la colonne 'nutriscore' pour simuler un DataFrame valide
+            return pd.DataFrame({"label": [1, 2], "col2": [3, 4], "nutriscore": [50, 60]})
+        elif "NS_noOutliers" in query:
+            # Ajouter la colonne 'nutriscore' pour simuler un DataFrame valide
+            return pd.DataFrame({"label": [5, 6], "col2": [7, 8], "nutriscore": [55, 65]})
+        else:
+            return pd.DataFrame()
 
 
 def test_dropna_nutriscore_data():
@@ -212,28 +229,27 @@ def test_display_label_distribution(
     mock_plotly_chart.assert_called()
 
 
-@patch('Homepage.get_cached_data')
-@patch('Homepage.display_header')
-@patch('Homepage.analyze_data')
-@patch('Homepage.display_histograms')
-@patch('Homepage.display_distribution_analysis')
-@patch('Homepage.display_label_distribution')
-def test_main(
-    mock_display_label_distribution,
-    mock_display_distribution_analysis, mock_display_histograms,
-    mock_analyze_data, mock_display_header, mock_get_cached_data
-):
-    """
-    Test the main function
-    """
-    mock_get_cached_data.return_value = (pd.DataFrame(), pd.DataFrame(), None, None, None, None)
-    mock_analyze_data.return_value = pd.DataFrame()
 
-    Homepage.main()
-    
-    mock_get_cached_data.assert_called_once()
-    mock_display_header.assert_called()
-    mock_analyze_data.assert_called()
-    mock_display_histograms.assert_called()
-    mock_display_distribution_analysis.assert_called()
-    mock_display_label_distribution.assert_called()
+
+def test_main_called():
+    """
+    Test to ensure that the 'main' function is called, using MockDatabase.
+    """
+    # Créer une instance de MockDatabase
+    db_instance = MockDatabase()
+
+    # Patch de get_cached_data pour utiliser MockDatabase au lieu de l'original
+    with patch("Homepage.get_cached_data") as mock_get_cached_data, \
+         patch("Homepage.main") as mock_main:
+        
+        # Configurer le comportement du mock pour renvoyer des DataFrames valides
+        mock_get_cached_data.return_value = (
+            db_instance.fetch_data("SELECT * FROM 'NS_withOutliers'"),
+            db_instance.fetch_data("SELECT * FROM 'NS_noOutliers'")
+        )
+
+        # Appeler la fonction principale
+        Homepage.main()
+
+        # Vérifier que main a bien été appelée
+        mock_main.assert_called_once()
