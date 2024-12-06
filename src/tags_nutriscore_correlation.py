@@ -211,8 +211,7 @@ class Tags:
                 if ids_target.any():
                     return ids_target
                 else:
-                    logger.error("Any recipe have this tag")
-                    raise AssertionError("Any recipe have this tag")
+                    logger.error("Any recipe have this tag")    
             else:
                 for tag in tag_target:
                     tmp = self.extract_tag(tag)
@@ -238,14 +237,12 @@ class Tags:
                 return ids_target
             else:
                 logger.error("Any recipe have this tag")
-                raise AssertionError("Any recipe have this tag")
             
 
 
 def main(arg):
     tags_reference = arg
     # create test directory to save test output
-    PARENT_DIR = os.path.dirname(CURRENT_DIR)
 
     # Before analyse tags, we need to load the dataset and 
     # extract tags from the dataset and save on new dataframe
