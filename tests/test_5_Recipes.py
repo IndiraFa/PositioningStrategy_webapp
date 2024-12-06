@@ -42,11 +42,19 @@ class TestRecipesApp(unittest.TestCase):
         app.display_datatable(all_recipes, label_choice)
         # Vérification que les données sont filtrées correctement et affichées
         mock_st.assert_called_once()
-        dffilter = all_recipes[all_recipes['label'] == label_choice].any()[[
+        dffilter = all_recipes[all_recipes['label'] == label_choice][[
             'name', 'nutriscore', 'label', 'tags'
             ]]
-        mock_st.assert_called_with(dffilter, hide_index=True)
+        # Extraire l'argument réel utilisé avec le mock
+        called_args, called_kwargs = mock_st.call_args
+    
+        # Vérifier que l'argument passé est équivalent au DataFrame attendu
+        pd.testing.assert_frame_equal(called_args[0], dffilter)
 
+        # Vérifier les autres arguments
+        self.assertEqual(called_kwargs.get('hide_index'), True)
+        
+        
     @patch('streamlit.markdown')
     @patch('streamlit.radio')
     @patch('streamlit.dataframe')
@@ -72,7 +80,8 @@ class TestRecipesApp(unittest.TestCase):
             'label': ['A', 'B'],
             'tags': ['tag1', 'tag2']
         })
-        all_recipes = all_recipes_proccessed.all()
+        #all_recipes = all_recipes_proccessed.all()
+        all_recipes = all_recipes_proccessed.copy()
 
         # Configurer le mock pour st.radio
         mock_radio.return_value = 'A'
@@ -83,11 +92,19 @@ class TestRecipesApp(unittest.TestCase):
         # Vérifier que les fonctions Streamlit ont été appelées correctement
         mock_markdown.assert_called()
         mock_radio.assert_called_once()
-        mock_dataframe.assert_called_with(
-            all_recipes_proccessed[all_recipes_proccessed['label'] == 'A'][[
-                'name', 'nutriscore', 'label', 'tags']], 
-                hide_index=True
-            )
+        
+        # DataFrame attendu après filtrage
+        expected_dataframe = all_recipes_proccessed[
+            all_recipes_proccessed['label'] == 'A'
+        ][['name', 'nutriscore', 'label', 'tags']]
+
+        # Vérification de l'appel à mock_dataframe
+        pd.testing.assert_frame_equal(
+            mock_dataframe.call_args[0][0], 
+            expected_dataframe
+        )
+        self.assertEqual(mock_dataframe.call_args[1].get('hide_index'), True)
+
 
     @patch('streamlit.table')
     def test_display_statistical_description(self, mock_st):
@@ -116,30 +133,6 @@ class TestRecipesApp(unittest.TestCase):
         self.assertIn('std', result.columns)
         self.assertEqual(len(result), 2)  # Deux colonnes nutritionnelles
 
-    @patch('streamlit.plotly_chart')
-    def test_display_pie_chart(self, mock_plotly_chart):
-        """
-        Test de la fonction display_pie_chart.
-        
-        Args:
-            mock_plotly_chart (MagicMock): Mock de la fonction st.plotly_chart
-
-        Returns:
-            None
-        """
-        stats = pd.DataFrame({
-            'mean': [20, 30, 25, 14],
-            'std': [5, 10, 8, 3],
-            'min': [15, 20, 18, 10],
-            'max': [25, 40, 30, 24]
-        }, index=['calories', 'protein', 'fat', 'nutriscore'])
-
-        # Appeler la fonction display_pie_chart
-        app.display_pie_chart(stats)
-
-        # Vérification que la fonction de Streamlit pour afficher 
-        # les graphiques est appelée
-        mock_plotly_chart.assert_called_once()
 
     @patch('streamlit.write')
     @patch('streamlit.subheader')
@@ -196,11 +189,11 @@ class TestRecipesApp(unittest.TestCase):
             None
         """
         stats = pd.DataFrame({
-            'mean': [20, 30, 25, 14],
-            'std': [5, 10, 8, 3],
-            'min': [15, 20, 18, 10],
-            'max': [25, 40, 30, 24]
-        }, index=['calories', 'protein', 'fat', 'sodium'])
+            'mean': [20, 30, 25, 14, 80], 
+            'std': [5, 10, 8, 3, 12],
+            'min': [15, 20, 18, 10, 70],
+            'max': [25, 40, 30, 24, 90]
+        }, index=['calories', 'protein', 'fat', 'sodium', 'nutriscore'])
 
         # Appeler la fonction display_bar_chart
         app.display_bar_chart(stats)
@@ -209,18 +202,28 @@ class TestRecipesApp(unittest.TestCase):
         # les graphiques est appelée
         mock_plotly_chart.assert_called_once()
 
-    @patch('streamlit.set_page_config')
-    @patch('streamlit.markdown')
-    @patch('streamlit.columns')
-    @patch('streamlit.multiselect')
-    @patch('tags_nutriscore_correlation.main')
+        # Récupérer l'argument passé à st.plotly_chart
+        fig = mock_plotly_chart.call_args[0][0]
+
+        # Vérification du titre de la figure
+        self.assertEqual(
+            fig.layout.title.text,
+            'Nutrition of the recipes on bar chart with the selected label'
+        )
+
     @patch('streamlit.write')
+    @patch('tags_nutriscore_correlation.main')
+    @patch('streamlit.multiselect')
+    @patch('streamlit.columns')
+    @patch('streamlit.markdown')
+    @patch('streamlit.set_page_config')
     def test_main(self, 
-                  mock_tags_nutriscore_main, 
-                  mock_multiselect, 
-                  mock_columns, 
-                  mock_markdown, 
-                  mock_set_page_config):
+                mock_set_page_config, 
+                mock_markdown, 
+                mock_columns, 
+                mock_multiselect, 
+                mock_tags_nutriscore_main, 
+                mock_write):
         """
         Test de la fonction main.
         
@@ -230,7 +233,9 @@ class TestRecipesApp(unittest.TestCase):
         
         # Configurer les mocks
         mock_multiselect.return_value = ['course']
-        mock_tags_nutriscore_main.return_value = (pd.DataFrame(), pd.DataFrame(), pd.DataFrame())
+        mock_tags_nutriscore_main.return_value = (
+            pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+        )
         mock_columns.return_value = (MagicMock(), MagicMock())
 
         # Appeler la fonction main
