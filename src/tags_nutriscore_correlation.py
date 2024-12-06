@@ -214,7 +214,6 @@ class Tags:
 
         if isinstance(tag_target, list):
             if len(tag_target) == 1:
-                print("1", tag_target[0])
                 logger.info(f"single tag target : tag = {tag_target[0]}")
                 ids_target = self.extract_tag(tag_target[0])
                 if ids_target.any():
@@ -226,20 +225,17 @@ class Tags:
                 for tag in tag_target:
                     tmp = self.extract_tag(tag)
                     ids_target.append(tmp)
-                    print(f'2 : tag = {tag} - {len(tmp)}')
                     logger.info(f"multiple tags target : tag = {tag}, len = {len(tmp)}")
                     # ids_target.append(self.extract_tag(tag))
                 # Union or intersection of recipes with tags
                 # list recipes have all tags target
                 intersection = list(reduce(lambda x, y: set(x) & set(y), ids_target))
-                print('len of recipes1d :', len(intersection))
                 logger.info(f"recipes with all multiple tags target : len = {len(intersection)}")
                 return intersection
                 # list test have one tag target
                 # recipes2 = np.union1d(ids_target)
 
         elif isinstance(tag_target, str):
-            print("3")
             logger.info(f"single tag target : tag = {tag_target}")
             ids_target = self.extract_tag(tag_target)
             if ids_target.any():
@@ -266,12 +262,12 @@ def main(arg):
     # df_raw = pd.read_csv('/Users/phuongnguyen/Documents/cours_BGD_Telecom_Paris_2024/Kit_Big_Data/dataset/RAW_recipes.csv')
     q1 = 'SELECT name, id, tags FROM "raw_recipes";'
     df_raw = DatabaseTable('raw_recipes', query=q1).apply_streamlit_db()
-    print('raw', df_raw.shape)
+    logger.info(f"Raw data loaded successfully, there are {df_raw.shape[0]} rows")
 
     # load dataset no outlier
     # df_nooutlier = pd.read_csv('/Users/phuongnguyen/Documents/cours_BGD_Telecom_Paris_2024/Kit_Big_Data/dataset/nutrition_table_nutriscore_no_outliers.csv')
     df_nooutlier = DatabaseTable('NS_noOutliers').apply_streamlit_db()
-    print('nooutlier', df_nooutlier.shape)
+    logger.info(f"Data no outlier loaded successfully, there are {df_nooutlier.shape[0]} rows")
 
     # if not os.path.exists(dir_test):
     #     os.makedirs(dir_test)
@@ -285,40 +281,25 @@ def main(arg):
     #     else:
     # new_data_tags = pd.read_csv('/Users/phuongnguyen/Documents/cours_BGD_Telecom_Paris_2024/Kit_Big_Data/dataset/explodetags.csv')
     new_data_tags = DatabaseTable('explodetags').apply_streamlit_db() # with raw recipes with outliers
-    print('new_data_tags', new_data_tags.shape)
+    logger.info(f"Data tags loaded successfully, there are {new_data_tags.shape[0]} rows")
 
     logger.info(f"Get tags reference from user, there are {tags_reference}")
     # get recipes with tags target
     tags_instance = Tags(new_data_tags, tags_reference)
     ids_recipes_target = np.array(tags_instance.get_recipes_from_tags())
-    print('number of recipes with tags target:', len(ids_recipes_target))
-    # logger.info('number of recipes with tags target:', len(ids_recipes_target))
+    logger.info('number of recipes with tags target:', len(ids_recipes_target))
 
     try:
         len(ids_recipes_target) > len(tags_reference.split(','))
-        # recipes_target = data.iloc[ids_recipes_target]
-        # print(recipes_target)
-        # recipes_target.to_csv(Path(dir_test,f'out_selected_tags1.csv'), index=False, header=True)
-        # ids_recipes_target.tofile(
-        #     Path(
-        #         dir_test,
-        #         f'out_selected_tags1.csv'),
-        #     sep=",")
         ids_recipes_target = pd.Series(ids_recipes_target.T) # convert to pandas series or to list of integer values
 
         # combine two tables to get recipes from tags target
         raw_recipes_nutrition = df_raw.iloc[np.where(df_nooutlier['id'].isin(df_raw['id']))]
-        print('Shape of all tags without outliers:', raw_recipes_nutrition.shape)
+        logger.info(f"Shape of all tags without outliers: {raw_recipes_nutrition.shape}")
         raw_recipes_nutrition['nutriscore'] = df_nooutlier['nutriscore']
         raw_recipes_nutrition['label'] = df_nooutlier['label']
         ids_common = ids_recipes_target[ids_recipes_target.isin(df_nooutlier['id'])]
-        print(ids_common)
-        # recipes_tags = raw_recipes_nutrition.iloc[ids_common]
         recipes_tags = raw_recipes_nutrition[raw_recipes_nutrition['id'].isin(ids_common)]
-        print('result:', recipes_tags.head())
-
-        # recipes_tags_withoutlier = df_raw.iloc[np.where(ids_recipes_target.id.isin(df_raw.id))]
-
 
         # get highest score and top 3 scores
         top3scores = np.unique(recipes_tags['nutriscore'])[-3:]
@@ -326,7 +307,6 @@ def main(arg):
 
         # get recipes with highest score and top 3 scores
         recipes_highestscore = recipes_tags[recipes_tags['nutriscore'] == maxscore]
-        # print('highest score:', recipes_highestscore)
 
         # Prepare dataset for analysis
         ids_recipes_target = ids_recipes_target.astype(int)
@@ -336,18 +316,7 @@ def main(arg):
 
     except AssertionError:
         logger.error('Any recipes have these tags target')
-        # print('Any recipes have these tags target together')
-        # for i in range(len(tags_reference.split(','))):
-        #     ids_recipes_target[i].tofile(
-        #         Path(
-        #             dir_test,
-        #             f'out_selected_tags{i + 1}.csv'),
-        #         sep=",")
-            # recipes_target = data.iloc[ids_recipes_target[i]]
-            # print(recipes_target)
-            # recipes_target.to_csv(Path(dir_test,f'out_selected_tags{i+1}.csv'), index=False, header=True)
-
-        
+        raise AssertionError('Any recipes have these tags target')
     return recipes_tags, dfsortinner, recipes_highestscore #, recipes_top3scores, 
 
 
