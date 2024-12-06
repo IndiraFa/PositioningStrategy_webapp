@@ -1,17 +1,25 @@
+import logging
 import pandas as pd
 import scipy
 from scipy.stats import shapiro, kstest, anderson
 from calcul_nutriscore import Plot
-import logging
 
 logger = logging.getLogger("nutriscore_analysis")
+
 
 def nutriscore_analysis(data):
     """
     Analyze the Nutri-Score of the recipes.
-    Arg: DataFrame with the nutrition table and the Nutri-Score.
-    Return: Tuple with the mean, median, max, and min values of the 
-    Nutri-Score.
+
+    Parameters
+    ----------
+    data: pd.DataFrame
+        DataFrame with the nutrition table and the Nutri-Score.
+
+    Returns
+    -------
+    Tuple
+        Tuple with the mean, median, max, and min values of the Nutri-Score.
     """
     try:
         nutriscore_mean = data['nutriscore'].mean()
@@ -25,12 +33,21 @@ def nutriscore_analysis(data):
         logger.error(f"Error in nutriscore_analysis: {e}")
         raise
 
+
 def shapiro_test(data, column):
     """
     Test the normality of the data using the Shapiro-Wilk test.
-    Arg: DataFrame with the nutrition table and the Nutri-Score.
+    Parameters
+    ----------
+    data: pd.DataFrame
+        DataFrame with the nutrition table and the Nutri-Score.
+    column: str
         Column name with the Nutri-Score.
-    Return: Tuple with the test statistic and the p-value.
+
+    Returns
+    -------
+    Tuple
+        Tuple with the test statistic and the p-value.
     """
     try:
         x = data[column]
@@ -43,13 +60,22 @@ def shapiro_test(data, column):
         logger.error(f"Error in shapiro_test: {e}")
         raise
 
+
 def ks_test(data, column):
     """
     Test the normality of the data using the Kolmogorov-Smirnov test.
-    Arg: DataFrame with the nutrition table and the Nutri-Score.
+
+    Parameters
+    ----------
+    data: pd.DataFrame
+        DataFrame with the nutrition table and the Nutri-Score.
+    column: str
         Column name with the Nutri-Score.
 
-    Return: Tuple with the test statistic and the p-value.
+    Returns
+    -------
+    Tuple
+        Tuple with the test statistic and the p-value.
     """
     try:
         x = data[column]
@@ -60,12 +86,22 @@ def ks_test(data, column):
         logger.error(f"Error in ks_test: {e}")
         raise
 
+
 def ad_test(data, column):
     """
     Test the normality of the data using the Anderson-Darling test.
-    Arg: DataFrame with the nutrition table and the Nutri-Score.
+
+    Parameters
+    ----------
+    data: pd.DataFrame
+        DataFrame with the nutrition table and the Nutri-Score.
+    column: str
         Column name with the Nutri-Score.
-    Return: Tuple with the test statistic and the critical values.
+
+    Returns
+    -------
+    Tuple
+        Tuple with the test statistic and the critical values.
     """
     try:
         x = data[column]
@@ -76,12 +112,22 @@ def ad_test(data, column):
         logger.error(f"Error in ad_test: {e}")
         raise
 
+
 def skewness(data, column):
     """
     Calculate the skewness of the data.
-    Arg: DataFrame with the nutrition table and the Nutri-Score.
+
+    Parameters
+    ----------
+    data: pd.DataFrame
+        DataFrame with the nutrition table and the Nutri-Score.
+    column: str
         Column name with the Nutri-Score.
-    Return: Skewness value.
+
+    Returns
+    -------
+    float
+        Skewness value.
     """
     try:
         x = data[column]
@@ -92,12 +138,22 @@ def skewness(data, column):
         logger.error(f"Error in skewness: {e}")
         raise
 
+
 def kurtosis(data, column):
     """
     Calculate the kurtosis of the data.
-    Arg: DataFrame with the nutrition table and the Nutri-Score.
+
+    Parameters
+    ----------
+    data: pd.DataFrame
+        DataFrame with the nutrition table and the Nutri-Score.
+    column: str
         Column name with the Nutri-Score.
-    Return: Kurtosis value.
+
+    Returns
+    -------
+    float
+        Kurtosis value.
     """
     try:
         x = data[column]
@@ -110,12 +166,20 @@ def kurtosis(data, column):
         logger.error(f"Error in kurtosis: {e}")
         raise
 
+
 def label_percentage(data, label):
     """
     Calculate the percentage of recipes with a specific Nutri-Score label.
-    Arg: DataFrame with the nutrition table and the Nutri-Score.
+    Parameters
+    ----------
+    data: pd.DataFrame
+        DataFrame with the nutrition table and the Nutri-Score.
+    label: str
         Label of the Nutri-Score.
-    Return: Percentage of recipes with the specific Nutri-Score label.
+
+    Returns
+    -------
+    float
     """
     try:
         label_percent = data[data['label'] == label].shape[0] / data.shape[0]
@@ -125,9 +189,14 @@ def label_percentage(data, label):
         logger.error(f"Error in label_percentage: {e}")
         raise
 
+
 def main():
     """
     Main function to analyze the Nutri-Score of the recipes.
+
+    Returns
+    -------
+    None
     """
     try:
         path_with_outliers = (
@@ -142,7 +211,6 @@ def main():
         data_no_outliers = pd.read_csv(path_no_outliers, sep=',')
         logger.info("Data without outliers loaded successfully.")
 
-        # with outliers
         Plot(
             data_with_outliers['nutriscore'],
             title='Nutriscore distribution with outliers',
@@ -159,19 +227,19 @@ def main():
             nutriscore_with_outliers_max, nutriscore_with_outliers_min = \
             nutriscore_analysis(data_with_outliers)
 
-        print(
+        logger.debug(
             f"The mean value of the Nutri-Score with outliers is "
             f"{nutriscore_with_outliers_mean:.2f}"
         )
-        print(
+        logger.debug(
             f"The median value of the Nutri-Score with outliers is "
             f"{nutriscore_with_outliers_median:.2f}"
         )
-        print(
+        logger.debug(
             f"The maximum value of the Nutri-Score with outliers is "
             f"{nutriscore_with_outliers_max:.2f}"
         )
-        print(
+        logger.debug(
             f"The minimum value of the Nutri-Score with outliers is "
             f"{nutriscore_with_outliers_min:.2f}"
         )
@@ -180,22 +248,22 @@ def main():
             data_with_outliers,
             'nutriscore'
         )
-        print(shapiro_test_with_outliers)
+        logger.debug(shapiro_test_with_outliers)
 
         ks_test_with_outliers = ks_test(data_with_outliers, 'nutriscore')
-        print(ks_test_with_outliers)
+        logger.debug(ks_test_with_outliers)
 
         ad_test_with_outliers = ad_test(data_with_outliers, 'nutriscore')
-        print(ad_test_with_outliers)
+        logger.debug(ad_test_with_outliers)
 
         skewness_with_outliers = skewness(data_with_outliers, 'nutriscore')
-        print(
+        logger.debug(
             f"The Nutriscore skewness with outliers is \
                 {skewness_with_outliers}"
         )
 
         kurtosis_with_outliers = kurtosis(data_with_outliers, 'nutriscore')
-        print(
+        logger.debug(
             f"The Nutriscore kurtosis with outliers is \
                 {kurtosis_with_outliers}"
         )
@@ -212,13 +280,12 @@ def main():
 
         for label in ['A', 'B', 'C', 'D', 'E']:
             label_percent = label_percentage(data_with_outliers, label)
-            print(
+            logger.debug(
                 f"The percentage of recipes with Nutriscore {label} with \
                     outliers is "
                 f"{label_percent * 100:.2f}%"
             )
 
-        # without outliers
         Plot(
             data_no_outliers['nutriscore'],
             title='Nutriscore distribution no outliers',
@@ -232,38 +299,38 @@ def main():
             nutriscore_no_outliers_max, nutriscore_no_outliers_min = \
             nutriscore_analysis(data_no_outliers)
 
-        print(
+        logger.debug(
             f"The mean value of the Nutri-Score without outliers is "
             f"{nutriscore_no_outliers_mean:.2f}"
         )
-        print(
+        logger.debug(
             f"The median value of the Nutri-Score without outliers is "
             f"{nutriscore_no_outliers_median:.2f}"
         )
-        print(
+        logger.debug(
             f"The maximum value of the Nutri-Score without outliers is "
             f"{nutriscore_no_outliers_max:.2f}"
         )
-        print(
+        logger.debug(
             f"The minimum value of the Nutri-Score without outliers is "
             f"{nutriscore_no_outliers_min:.2f}"
         )
 
         shapiro_test_no_outliers = shapiro_test(data_no_outliers, 'nutriscore')
-        print(shapiro_test_no_outliers)
+        logger.debug(shapiro_test_no_outliers)
 
         ks_test_no_outliers = ks_test(data_no_outliers, 'nutriscore')
-        print(ks_test_no_outliers)
+        logger.debug(ks_test_no_outliers)
 
         ad_test_no_outliers = ad_test(data_no_outliers, 'nutriscore')
-        print(ad_test_no_outliers)
+        logger.debug(ad_test_no_outliers)
 
         skewness_no_outliers = skewness(data_no_outliers, 'nutriscore')
-        print(f"The Nutriscore skewness without outliers is \
+        logger.debug(f"The Nutriscore skewness without outliers is \
               {skewness_no_outliers}")
 
         kurtosis_no_outliers = kurtosis(data_no_outliers, 'nutriscore')
-        print(f"The Nutriscore kurtosis without outliers is \
+        logger.debug(f"The Nutriscore kurtosis without outliers is \
               {kurtosis_no_outliers}")
 
         Plot(
@@ -278,7 +345,7 @@ def main():
 
         for label in ['A', 'B', 'C', 'D', 'E']:
             label_percent = label_percentage(data_no_outliers, label)
-            print(
+            logger.debug(
                 f"The percentage of recipes with Nutriscore {label} without \
                     outliers "
                 f"is {label_percent * 100:.2f}%"
@@ -286,6 +353,7 @@ def main():
     except Exception as e:
         logger.error(f"Error in main: {e}")
         raise
+
 
 if __name__ == "__main__":
     main()

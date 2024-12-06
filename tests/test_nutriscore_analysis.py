@@ -67,7 +67,4 @@ def test_main(mock_plot, mock_read_csv):
     )
     mock_plot_instance = MagicMock()
     mock_plot.return_value = mock_plot_instance
-
-    with patch('builtins.print') as mock_print:
-        nutriscore_analysis.main()
-        assert mock_print.call_count > 0
+    nutriscore_analysis.main()
