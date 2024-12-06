@@ -16,11 +16,11 @@ from nutriscore_analysis import (
 )
 st.set_page_config(layout="wide")
 
-# Configuration du logging
+
 configure_logging()
 logger = logging.getLogger("Homepage")
 
-# SQL queries
+logger.info("Starting the application")
 
 @st.cache_data
 def get_cached_data(_db_instance: Database, query1:str, query2:str):
@@ -73,17 +73,21 @@ def display_header():
     )
 
     st.write(
-            """
-            We built a Nutrition Score based on daily value intake 
-            recommendations to explore for Mangetamain the opportunity to 
-            position itself as a healthy food brand. 
-            <br>
-            The method of calculation of the Nutriscore is described 
-            in the **Appendix** section. Details on the outliers removal
-            are available in the **Outliers** section.
-            """,
-            unsafe_allow_html=True
+        """
+        Welcome to our Nutrition Score web application!\
+              This tool is designed to help 
+        Mangetamain explore its potential as a leading \
+            healthy food brand by evaluating 
+        nutritional quality based on daily value intake recommendations. 
+        <br><br>
+        Learn more about how the NutriScore is calculated\
+              in the **Appendix** section, 
+        and find details on our approach to outlier removal\
+              in the **Outliers** section.
+        """,
+        unsafe_allow_html=True
     )
+
 
     css_styles = """
         <style>
@@ -111,13 +115,14 @@ def display_header():
                 <br>
                 Around 90% of the recipes have a Nutriscore of A, B or C, which
                 is a good indicator of the nutritional quality of the recipes 
-                of the website
+                of the website.
             </p>
         </div>
         """, unsafe_allow_html=True)
 
 
-def analyze_data(data_with_outliers: pd.DataFrame, data_no_outliers: pd.DataFrame):
+def analyze_data(data_with_outliers: pd.DataFrame,\
+                  data_no_outliers: pd.DataFrame):
     """
     Analyze the data and return results on Nutri-Score distribution (mean,
     median, max, min), skewness, and kurtosis.
@@ -157,7 +162,9 @@ def analyze_data(data_with_outliers: pd.DataFrame, data_no_outliers: pd.DataFram
     return results
 
 
-def display_histograms(data_with_outliers: pd.DataFrame, data_no_outliers:pd.DataFrame, results: pd.DataFrame):
+def display_histograms(data_with_outliers: pd.DataFrame,
+                        data_no_outliers:pd.DataFrame,
+                              results: pd.DataFrame):
     """
     Display histograms of the Nutri-Score distribution.
 
@@ -173,7 +180,7 @@ def display_histograms(data_with_outliers: pd.DataFrame, data_no_outliers:pd.Dat
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("Nutri-Score based on the full data set")
+        st.subheader("Nutri-Score based on the full dataset")
 
         bins_with_outliers = st.slider(
             "Select the number of bins", 4, 100, 28, key=1
@@ -200,7 +207,7 @@ def display_histograms(data_with_outliers: pd.DataFrame, data_no_outliers:pd.Dat
         st.write(results)
 
     with col2:
-        st.subheader("Nutri-Score based on the data set without outliers")
+        st.subheader("Nutri-Score based on the dataset without outliers")
 
         bins_no_outliers = st.slider(
             "Select the number of bins", 4, 100, 28, key=2
@@ -224,108 +231,101 @@ def display_histograms(data_with_outliers: pd.DataFrame, data_no_outliers:pd.Dat
 
         st.divider()
         st.write("""
-                 - The distribution of the Nutri-Score is bell-shaped, with min 
-                 and max values between 0 and 14 as a consequence of the method
-                    used to calculate the Nutri-Score. 
-                 <br>
-                 - The mean and median are around 8.5, which is better than the 
-                 theoretical average value of 7.5 for the calculated
-                 Nutriscore.
-                 <br>
-                 - The distribution is slightly right-skewed (skewness = 0.13) 
-                 which is characteristic of a distribution with a mass 
-                 concentrated on the left side. 
-                <br>
-                 - The kurtosis is 2.7, which indicates that
-                    the distribution has heavier tails and a sharper peak than a
-                    normal distribution. 
-                 <br>
-                 - Without outliers, the mean and median are further apart. 
-                 The skewness and kurtosis are closer to 0, which indicates
-                 a slight adustment towards the normal distrubution.""",
-                 unsafe_allow_html=True
-        )
-        st.divider()
+            - The Nutri-Score distribution follows a bell-shaped curve,
+                  with minimum and maximum values ranging from 0 to 14. 
+            These bounds result from the methodology used to calculate
+                  the Nutri-Score.
+            <br>
+            - The mean and median are approximately 8.5, which is higher
+                  than the theoretical average of 7.5, indicating an overall 
+            positive shift in Nutri-Score values.
+            <br>
+            - The distribution is slightly right-skewed (skewness = 0.13),
+                  meaning the majority of values are concentrated towards 
+            the lower end of the scale.
+            <br>
+            - The kurtosis value of 2.7 suggests the distribution has heavier
+                  tails and a sharper peak compared to a normal distribution.
+            <br>
+            - When outliers are removed, the mean and median diverge further,
+                  while the skewness and kurtosis move closer to 0, 
+            indicating a slight adjustment towards a normal distribution.
+        """, unsafe_allow_html=True)
+
+
     
 
-def display_distribution_analysis(data_with_outliers: pd.DataFrame, data_no_outliers: pd.DataFrame):
+def display_distribution_analysis(data_with_outliers: pd.DataFrame,
+                                   data_no_outliers: pd.DataFrame):
     """
-    Display the normal distribution analysis of the Nutri-Score : Shapiro-Wilk,
-    Kolmogorov-Smirnov and Anderson-Darling tests.
+    Display the normality analysis of the Nutri-Score using Shapiro-Wilk, 
+    Kolmogorov-Smirnov, and Anderson-Darling tests.
 
     Args:
-    - data_with_outliers (pd.DataFrame): Data with outliers
-    - data_no_outliers (pd.DataFrame): Data without outliers
+        data_with_outliers (pd.DataFrame): Data with outliers.
+        data_no_outliers (pd.DataFrame): Data without outliers.
 
     Returns:
-    - None
+        None
     """
     logger.debug("Displaying distribution analysis")
-    st.subheader("Analysis of the Nutri-Score distribution")
+    st.subheader("Analysis of the Nutri-Score Distribution")
 
     analysis = st.selectbox(
-        "Select the test for a normal distribution of the Nutriscore",
+        "Select the normality test for the Nutri-Score:",
         ["Shapiro-Wilk", "Kolmogorov-Smirnov", "Anderson-Darling"],
         key=3
     )
 
     if analysis == "Shapiro-Wilk":
-        st.write("**Shapiro-Wilk test**")
+        st.write("**Shapiro-Wilk Test**")
+        shapiro_with_outliers = shapiro_test(data_with_outliers, 'nutriscore')
+        shapiro_no_outliers = shapiro_test(data_no_outliers, 'nutriscore')
 
-        shapiro_test_with_outliers = shapiro_test(
-            data_with_outliers,
-            'nutriscore'
+        st.write(
+            f"Shapiro-Wilk test for the Nutri-Score with outliers: "
+            f"{shapiro_with_outliers}"
         )
         st.write(
-            f"The Shapiro-Wilk test for the Nutri-Score with outliers is "
-            f"{shapiro_test_with_outliers}"
+            f"Shapiro-Wilk test for the Nutri-Score without outliers: "
+            f"{shapiro_no_outliers}"
         )
 
-        shapiro_test_no_outliers = shapiro_test(data_no_outliers, 'nutriscore')
-        st.write(
-            f"The Shapiro-Wilk test for the Nutri-Score without outliers is "
-            f"{shapiro_test_no_outliers}"
-        )
-    
     elif analysis == "Kolmogorov-Smirnov":
-        st.write("**Kolmogorov-Smirnov test**")
+        st.write("**Kolmogorov-Smirnov Test**")
+        ks_with_outliers = ks_test(data_with_outliers, 'nutriscore')
+        ks_no_outliers = ks_test(data_no_outliers, 'nutriscore')
 
-        ks_test_with_outliers = ks_test(data_with_outliers, 'nutriscore')
         st.write(
-            f"The Kolmogorov-Smirnov test for the Nutri-Score \
-                with outliers is "
-            f"{ks_test_with_outliers}"
+            f"Kolmogorov-Smirnov test for the Nutri-Score with outliers: "
+            f"{ks_with_outliers}"
         )
-
-        ks_test_no_outliers = ks_test(data_no_outliers, 'nutriscore')
         st.write(
-            f"The Kolmogorov-Smirnov test for the Nutri-Score without \
-                outliers is "
-            f"{ks_test_no_outliers}"
+            f"Kolmogorov-Smirnov test for the Nutri-Score without outliers: "
+            f"{ks_no_outliers}"
         )
 
     elif analysis == "Anderson-Darling":
-        st.write("**Anderson-Darling test**")
+        st.write("**Anderson-Darling Test**")
+        ad_with_outliers = ad_test(data_with_outliers, 'nutriscore')
+        ad_no_outliers = ad_test(data_no_outliers, 'nutriscore')
 
-        ad_test_with_outliers = ad_test(data_with_outliers, 'nutriscore')
         st.write(
-            f"The Anderson-Darling test for the Nutri-Score with outliers is "
-            f"{ad_test_with_outliers}"
+            f"Anderson-Darling test for the Nutri-Score with outliers: "
+            f"{ad_with_outliers}"
         )
-
-        ad_test_no_outliers = ad_test(data_no_outliers, 'nutriscore')
         st.write(
-            f"The Anderson-Darling test for the Nutri-Score without \
-                outliers is "
-            f"{ad_test_no_outliers}"
+            f"Anderson-Darling test for the Nutri-Score without outliers: "
+            f"{ad_no_outliers}"
         )
 
     st.write(
-        "**All tests show that the Nutri-Score is not normally distributed.** "
-        "(NB : the Shapiro-Wilk test is more accurate for N<5000)"
+        "**Summary:** All tests indicate that the Nutri-Score is not normally distributed. "
+        "Note: The Shapiro-Wilk test is recommended for sample sizes smaller than 5000."
     )
 
     st.divider()
+
 
 
 def display_label_distribution(data_with_outliers: pd.DataFrame, data_no_outliers: pd.DataFrame):
@@ -363,8 +363,7 @@ def display_label_distribution(data_with_outliers: pd.DataFrame, data_no_outlier
 
         fig.update_traces(textposition='outside', textinfo='percent+label')
         st.plotly_chart(fig)
-        SCALE = "images/scale.png"
-        st.image(get_asset_path(SCALE), width=600)
+
 
     with col4:
         fig = px.pie(
@@ -378,15 +377,26 @@ def display_label_distribution(data_with_outliers: pd.DataFrame, data_no_outlier
         fig.update_traces(textposition='outside', textinfo='percent+label')
         st.plotly_chart(fig)
 
-        st.write(
-            """
+    SCALE = "images/scale.png"
+    st.image(get_asset_path(SCALE), width=600)
+
+    st.markdown(
+        """
+        <div style="border: 2px solid #cccccc;
+          padding: 15px;
+            border-radius: 10px;
+              background-color: #f9f9f9;">
+            <p style="font-size: 16px; line-height: 1.6; margin: 0;">
             Overall, the recipes show good nutritional quality, 
             with around 90% of label A, B and C. Getting rid of
-              the outliers even improved the good to bad nutritional 
-              quality ratio, many outliers having a low Nutriscore 
-              (see details in the next section).
-            """
-        )
+            the outliers even improved the good to bad nutritional 
+            quality ratio, many outliers having a low Nutriscore 
+            (see details in the next section).
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
 def main():

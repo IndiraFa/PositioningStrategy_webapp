@@ -45,33 +45,11 @@ def display_introduction():
     Nutritional Data Analysis and Outlier Detection
     </h1>
 
-    Welcome to this interactive application! Its purpose is to explore a 
-    set of nutritional data extracted from a PostgreSQL database.  
-    Through this interface, you can visualize data, understand processing 
-    steps, and identify outliers.
+    In this page the purpose is to explore a set of nutritional data extracted
+                 from a PostgreSQL database. Through this interface, you can
+                 visualize data, understand processing steps, and identify
+                 outliers.
 
-    <div style="display: flex; justify-content: center; padding: 10px;">
-        <div style="border: 2px solid purple; padding: 20px; background-color:\
-             #f2e6ff; border-radius: 10px; width: 50%;">
-            <h3 style="color: purple;">
-            Page Structure:
-            </h3>
-            <ul>
-                <li>Loading and exploring raw data.</li>
-                <li>Analyzing formatted data adjusted to daily nutritional 
-                    needs.</li>
-                <li>Outlier identification using:
-                    <ul>
-                        <li><strong>Manual filters based on predefined 
-                            thresholds.</strong></li>
-                        <li><strong>Z-score statistical method.</strong></li>
-                    </ul>
-                </li>
-                <li>Graphical visualization for better understanding of 
-                    distributions.</li>
-            </ul>
-        </div>
-    </div>
     
     Take your time to explore each step to better understand nutritional 
     data processing!  
@@ -88,14 +66,16 @@ def load_and_explore_raw_data(raw_data):
     """
         
     logger.debug("Loading and exploring raw data.")
-    st.write('\n Here is a preview of the data:')
+    st.write('\n Preview of the data:')
     st.write(raw_data.head())
-    st.write('''
-    The data in the nutrition column is first extracted from the table 
-            following this schema: \n
-            [calories, total_fat, sugar, sodium, protein, saturated_fat,\
-            carbohydrates] 
-            ''')
+    st.write(
+        '''
+        Data from the nutrition column are first extracted from the table 
+        following this schema:\n
+        [calories, total_fat, sugar, sodium, protein, saturated_fat, 
+        carbohydrates]
+        '''
+    )
     with st.expander("Note:"):
         st.markdown('''
         Except for calories, other values are expressed as percentages. \n
@@ -112,18 +92,18 @@ def analyze_formatted_data(formatted_data, normalized_data):
     """
         
     logger.debug("Display Analyzing formatted data and normalized data.")
-    st.write('Formatted data:')
+    st.write('Preview of formatted data:')
     st.write(formatted_data.head())
 
     st.markdown('''
-    Our data refers to a portion and has been adjusted, in percentage 
+    Our data refers to 1 portion and has been adjusted, in percentage 
                 terms, to daily values of 2000 calories for an adult.
                 ''')
     st.latex(r'''
     \text{daily value} = \frac{\text{portion value}}{2000} \times 100
             ''')
 
-    st.write('Adjusted data:')
+    st.write('Preview of adjusted data:')
     st.write(normalized_data.head())
 
     st.markdown(f'''
@@ -284,19 +264,37 @@ def display_conclusion():
     """
         
     logger.debug("Displaying the conclusion.")
+
+    css_styles = """
+        <style>
+        .container_with_border {
+            border: 1px solid rgba(49, 51, 63, 0.2);
+            border-radius: 0.5rem;
+            padding: calc(1em - 1px);
+            background-color: #f3e5f5;
+        }
+        .container_with_border h3 {
+            color: purple;
+        }
+        .container_with_border p {
+            color: black;
+        }
+        </style>
+    """
+    st.markdown(css_styles, unsafe_allow_html=True)
+
     st.markdown("""
-    <div style="border: 2px solid purple; padding: 20px; background-color:
-     #f2e6ff; border-radius: 10px;">
-        <h3 style="color: purple;">
-        Conclusion:
-        </h3>
-        The interactive visualization allows for better understanding of 
-        distributions of various nutritional values across different categories 
-        of food recipes. The data cleaning steps, including manual filtering 
-        and Z-score method, ensure better quality of the data for 
-        further analysis.
-    </div>
-    """, unsafe_allow_html=True)
+        <div class="container_with_border">
+            <h3>💡 Key takeaways</h3>
+            <p>The interactive visualization allows for better understanding
+                 of distributions of various nutritional values across
+                 different categories of food recipes. The data cleaning steps,
+                 including manual filtering and Z-score method, ensure better
+                 quality of the data for further analysis.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    
     logger.debug("Conclusion displayed successfully.")
 
 
@@ -336,12 +334,14 @@ def main():
 
     # Appels les fonctions d'affichage
     display_introduction()
+    display_conclusion()
+    "---"
     load_and_explore_raw_data(raw_data)
     analyze_formatted_data(formatted_data, normalized_data)
     identify_outliers_with_manual_filters()
     apply_z_score_method(outliers_size)
     visualize_data_distribution(normalized_data, prefiltre_data, nutrition_noOutliers)
-    display_conclusion()
+    
     logger.debug("Main function executed successfully.")
 
 if __name__ == "__main__":
