@@ -84,7 +84,7 @@ def test_database_table_init():
 
 
 
-class TestTagsNutriscoreCorrelation(unittest.TestCase):
+class TestDatabaseTable(unittest.TestCase):
 
     @patch('tags_nutriscore_correlation.db_instance.fetch_data')
     def test_load_streamlit_db(self, mock_fetch_data):
@@ -102,6 +102,36 @@ class TestTagsNutriscoreCorrelation(unittest.TestCase):
 
         # Vérifier que fetch_data a été appelé avec la bonne requête
         mock_fetch_data.assert_called_once_with('SELECT * FROM "raw_recipes";')
+
+        # Vérifier que le résultat est un DataFrame et contient les données attendues
+        expected_result = pd.DataFrame({
+            'id': [1, 2, 3],
+            'name': ['Recipe1', 'Recipe2', 'Recipe3'],
+            'tags': ['tag1', 'tag2', 'tag3']
+        })
+        pd.testing.assert_frame_equal(result, expected_result)
+
+    @patch('tags_nutriscore_correlation.load_streamlit_db')
+    def test_apply_streamlit_db(self, mock_load_streamlit_db):
+        """Test de la méthode apply_streamlit_db."""
+        
+        # Configurer le mock pour load_streamlit_db
+        mock_load_streamlit_db.return_value = pd.DataFrame({
+            'id': [1, 2, 3],
+            'name': ['Recipe1', 'Recipe2', 'Recipe3'],
+            'tags': ['tag1', 'tag2', 'tag3']
+        })
+
+        # Créer une instance de DatabaseTable
+        table_name = 'test_table'
+        query = 'SELECT * FROM test_table;'
+        db_table = DatabaseTable(table_name, query)
+
+        # Appeler la méthode apply_streamlit_db
+        result = db_table.apply_streamlit_db()
+
+        # Vérifier que load_streamlit_db a été appelé avec les bons arguments
+        mock_load_streamlit_db.assert_called_once_with(table_name, query)
 
         # Vérifier que le résultat est un DataFrame et contient les données attendues
         expected_result = pd.DataFrame({
