@@ -1,8 +1,9 @@
 Positioning Strategy - Mangetamain
-L'entreprise Mangetamain nous a sollicité pour la publication sous forme de webapp de l'analyse de sa base de données. 
-Nous avons étudié la pertinence d'un repositionnement vers un site dédié autour de la nutrition, de la santé et du fitness.
 
+The Mangetamain company asked us to study the relevance of a repositioning towards a site dedicated to nutrition, health and fitness.
+We published our analysis of its database in the form of a webapp. 
 
+Direct link to the public app : https://positioningstrategy-mangetamain-stable.streamlit.app 
 
 # How setup environment
 1. create virtual environment

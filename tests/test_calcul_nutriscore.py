@@ -3,31 +3,40 @@ import pandas as pd
 import toml
 import os
 import sys
-
+from sqlalchemy import create_engine, text
+from unittest.mock import patch
 # Add the 'src' folder to the path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 
                                              '..', 'src')))
 
-from sqlalchemy import create_engine, text
-from unittest.mock import patch, MagicMock
 from calcul_nutriscore import NutriScore, Plot
-from utils.streamlit_todb import fetch_data_from_db, configs_db
+from db.db_instance import db_instance
 
-# SQL Queries
 query1 = 'SELECT * FROM "nutrition_withOutliers"'
 query2 = 'SELECT * FROM "nutrient_table"'
 query3 = 'SELECT * FROM "NS_withOutliers"'
 
-# Data loading
-nutrition_withOutliers, nutrient_table, NS_withOutliers, _, _, _ = \
-    fetch_data_from_db(configs_db, query1, query2, query3)
+nutrient_table = db_instance.fetch_data(query2)
+NS_withOutliers = db_instance.fetch_data(query3)
 
 
 # Fixtures
 @pytest.fixture
 def sample_data():
     """Fixture for the sample data."""
-    return nutrition_withOutliers
+    data = {
+        'id': [1, 2, 3, 4],
+        'dv_calories_%': [10, 15, 20, 12],
+        'dv_total_fat_%': [5, 7, 8, 6],
+        'dv_sugar_%': [6, 8, 9, 7],
+        'dv_sodium_%': [2, 3, 1, 4],
+        'dv_protein_%': [3, 2, 4, 5],
+        'dv_sat_fat_%': [4, 5, 6, 3],
+        'dv_carbs_%': [10, 9, 8, 7]
+    }
+
+    df = pd.DataFrame(data)
+    return df
 
 
 @pytest.fixture
@@ -35,7 +44,16 @@ def sample_grille():
     """
     Fixture for the nutrient table (grille).
     """
-    return nutrient_table
+    data_grille = {
+        'points': [0, 1, 1.25],
+        'dv_calories_%': [37, 43, 49],
+        'dv_sat_fat_%': [95, 114, 133],
+        'dv_sugar_%': [84, 101, 114],
+        'dv_sodium_%': [76, 89, 101],
+        'dv_protein_%': [-91, -73, -55]
+    }
+    df_grille = pd.DataFrame(data_grille)
+    return df_grille
 
 
 @pytest.fixture
@@ -43,11 +61,25 @@ def sample_configs():
     """
     Fixture for the database configuration.
     """
-    configs = configs_db.copy()  # Copy the existing configuration
-    configs['grillecolname'] = [
-        'dv_calories_%', 'dv_sat_fat_%', 'dv_sugar_%', 'dv_sodium_%', 
-        'dv_protein_%'
-    ]
+    configs = {
+            'nutritioncolname': [
+                'calories',
+                'total_fat_%',
+                'sugar_%',
+                'sodium_%',
+                'protein_%',
+                'sat_fat_%',
+                'carbs_%'
+            ],
+            'grillecolname': [
+                'dv_calories_%',
+                'dv_sat_fat_%',
+                'dv_sugar_%',
+                'dv_sodium_%',
+                'dv_protein_%'
+            ],
+            'dv_calories': 2000
+        }
     return configs
 
 
@@ -72,7 +104,7 @@ def db_connection():
         yield conn
 
 
-# Tests for NutriScore
+# # Tests for NutriScore
 
 @patch.object(NutriScore, 'calcul_nutriscore')
 @patch.object(NutriScore, 'set_scorelabel')
@@ -94,25 +126,19 @@ def test_init(mock_set_scorelabel, mock_calcul_nutriscore):
     -------
     None
     """
-    # Mock return values for the methods
     mock_calcul_nutriscore.return_value = 'mock_nutriscore'
     mock_set_scorelabel.return_value = 'mock_label'
 
-    # Sample data for testing
     data = {'sample': 'data'}
     grille = {'sample': 'grille'}
     configs = {'sample': 'configs'}
 
-    # Create an instance of NutriScore
     nutriscore_instance = NutriScore(data, grille, configs)
 
-    # Assertions to check if the attributes are correctly initialized
     assert nutriscore_instance.data == data
     assert nutriscore_instance.grille == grille
     assert nutriscore_instance.configs == configs
 
-    # Assertions to check if the methods are called and return the correct 
-    # values
     mock_calcul_nutriscore.assert_called_once()
     mock_set_scorelabel.assert_called_once()
     assert nutriscore_instance.nutriscore == 'mock_nutriscore'
@@ -141,9 +167,9 @@ def test_calcul_nutriscore(sample_data, sample_grille, sample_configs):
     nutri_score = NutriScore(sample_data, sample_grille, sample_configs)
     result = nutri_score.calcul_nutriscore()
     assert 'nutriscore' in result.columns, "NutriScore column is missing."
-    assert not result['nutriscore'].isnull().any(),\
+    assert not result['nutriscore'].isnull().any(), \
         "NutriScore contains NaN values."
-    assert result['nutriscore'].dtype == float,\
+    assert result['nutriscore'].dtype == float, \
           "NutriScore should be of type float."
 
 
@@ -201,13 +227,11 @@ def test_stock_database_real(db_connection):
         f"The size of the table NS_withOutliers ({count_ns}) "
         f"does not match that of nutrition_withOutliers ({count_nutrition})."
     )
-    assert count_ns > 0,\
+    assert count_ns > 0, \
           "The NS_withOutliers table is empty or does not exist."
 
 
-
 # Tests for Plot
-
 def test_init_plot():
     """
     Test the __init__ method of the Plot class.
@@ -224,10 +248,8 @@ def test_init_plot():
     ylabel = "Y-Axis"
     output_path = "test.png"
 
-    # Create an instance of Plot
     plot_instance = Plot(data, title, xlabel, ylabel, output_path)
 
-    # Assertions to check if the attributes are correctly initialized
     assert plot_instance.data == data
     assert plot_instance.title == title
     assert plot_instance.xlabel == xlabel
@@ -272,4 +294,3 @@ def test_plot_distribution_label():
     with patch('matplotlib.pyplot.savefig') as savefig_mock:
         plot.plot_distribution_label(labels)
         savefig_mock.assert_called_once_with("test_label.png")
-

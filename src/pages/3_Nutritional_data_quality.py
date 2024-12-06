@@ -1,5 +1,3 @@
-import sys
-import os
 import streamlit as st
 import pandas as pd
 import logging
@@ -375,7 +373,6 @@ def main():
     display_header()
     display_linear_regression(lr_nutrition)
     display_confidence_interval_test(lr_nutrition)
-
 
 
 if __name__ == "__main__":

@@ -10,7 +10,8 @@ from functools import reduce
 import toml
 import streamlit as st
 from db.db_instance import db_instance
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'utils')))
+sys.path.append(os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..', 'utils')))
 import logging
 
 logger = logging.getLogger("tags_nutriscore_correlation")
@@ -48,27 +49,9 @@ class DatabaseTable:
         - data (DataFrame): The input dataset to create a table from.
             
         """
-        # self.toml_path = toml_path
-        # self.postgresql_config = self.read_toml_file()
         self.query = query
         self.data = data
         self.table_name = table_name
-
-    # def read_toml_file(self):
-    #     """
-    #     Read a toml file and return the configuration settings.
-
-    #     Args:
-    #         toml_path (str): The path to the toml file.
-
-    #     Returns:
-    #         dict: A dictionary containing the configuration settings.
-    #     """
-    #     self.postgresql_config = toml.load(self.toml_path)['connections']['postgresql']
-    #     return self.postgresql_config
-    
-    # def create_table(self):
-
 
     def apply_streamlit_db(self):
         """
@@ -131,7 +114,8 @@ class PreprocessTags:
 
     def split_text_tag(self):
         """
-        Preprocess recipe tags by putting them in lowercase and removing hyphens.
+        Preprocess recipe tags by putting them in lowercase and 
+        removing hyphens.
 
         Returns:
             list: Preprocessed tags.
@@ -139,7 +123,8 @@ class PreprocessTags:
         # put text in lowercase
         self.tags = list(map(lambda x: [tag.lower() for tag in x], self.tags))
         # Remove hyphens
-        self.tags = list(map(lambda x: [tag.replace('-', ' ') for tag in x], self.tags))
+        self.tags = list(map(
+            lambda x: [tag.replace('-', ' ') for tag in x], self.tags))
         return self.tags
 
     def get_rawdata_tags(self):
@@ -176,7 +161,8 @@ class Tags:
         Initialize the Tags class.
 
         Args:
-            tagsdata (DataFrame): The input dataset containing tags and recipe IDs.
+            tagsdata (DataFrame): The input dataset containing tags and 
+        recipe IDs.
             tag_target (str): The target tag(s) for extraction.
         """
         self.tags = tagsdata['tags']
@@ -197,7 +183,12 @@ class Tags:
         t = self.tagsdata
         # ids_target = self.tags[self.tags == tag].index.tolist()
         if (t['tags'] == tag).any():
-            ids_target = t.where(t['tags'] == tag).dropna()['idrecipes'].astype(int).to_list()
+            ids_target = (
+                t.where(t['tags'] == tag)
+                .dropna()['idrecipes']
+                .astype(int)
+                .to_list()
+                )
             ids_target = np.unique(ids_target)
         else:
             ids_target = []
@@ -220,21 +211,24 @@ class Tags:
                 if ids_target.any():
                     return ids_target
                 else:
-                    logger.error("Any recipe have this tag")
-                    raise AssertionError("Any recipe have this tag")
+                    logger.error("Any recipe have this tag")    
             else:
                 for tag in tag_target:
                     tmp = self.extract_tag(tag)
                     ids_target.append(tmp)
-                    logger.info(f"multiple tags target : tag = {tag}, len = {len(tmp)}")
-                    # ids_target.append(self.extract_tag(tag))
+                    logger.info(
+                        f"multiple tags target : tag = {tag}, len = {len(tmp)}"
+                        )
                 # Union or intersection of recipes with tags
                 # list recipes have all tags target
-                intersection = list(reduce(lambda x, y: set(x) & set(y), ids_target))
-                logger.info(f"recipes with all multiple tags target : len = {len(intersection)}")
+                intersection = list(reduce(
+                    lambda x, y: set(x) & set(y), ids_target))
+                logger.info(
+                    f"""
+                    recipes with all multiple tags target : 
+                    len = {len(intersection)}"""
+                    )
                 return intersection
-                # list test have one tag target
-                # recipes2 = np.union1d(ids_target)
 
         elif isinstance(tag_target, str):
             logger.info(f"single tag target : tag = {tag_target}")
@@ -243,83 +237,84 @@ class Tags:
                 return ids_target
             else:
                 logger.error("Any recipe have this tag")
-                raise AssertionError("Any recipe have this tag")
             
 
 
 def main(arg):
     tags_reference = arg
     # create test directory to save test output
-    PARENT_DIR = os.path.dirname(CURRENT_DIR)
-    dir_test = os.path.join(PARENT_DIR, 'tests/tags')
 
-    # edit the path to the secrets.toml file
-    tom_path = os.path.join(CURRENT_DIR, '.streamlit', 'secrets.toml')
-
-    # Before analyse tags, we need to load the dataset and extract tags from the dataset and save on new dataframe
+    # Before analyse tags, we need to load the dataset and 
+    # extract tags from the dataset and save on new dataframe
     # load raw data
     logger.info(f"Loading data from the database ...")
     # path = os.path.join(PARENT_DIR, 'dataset/RAW_recipes.csv')
-    # df_raw = pd.read_csv('/Users/phuongnguyen/Documents/cours_BGD_Telecom_Paris_2024/Kit_Big_Data/dataset/RAW_recipes.csv')
     q1 = 'SELECT name, id, tags FROM "raw_recipes";'
     df_raw = DatabaseTable('raw_recipes', query=q1).apply_streamlit_db()
-    logger.info(f"Raw data loaded successfully, there are {df_raw.shape[0]} rows")
+    logger.info(
+        f"Raw data loaded successfully, there are {df_raw.shape[0]} rows"
+        )
 
     # load dataset no outlier
-    # df_nooutlier = pd.read_csv('/Users/phuongnguyen/Documents/cours_BGD_Telecom_Paris_2024/Kit_Big_Data/dataset/nutrition_table_nutriscore_no_outliers.csv')
     df_nooutlier = DatabaseTable('NS_noOutliers').apply_streamlit_db()
     logger.info(f"Data no outlier loaded successfully, there are {df_nooutlier.shape[0]} rows")
 
-    # if not os.path.exists(dir_test):
-    #     os.makedirs(dir_test)
-    # else:
-    #     os.chdir(dir_test)
-    #     # create new exploded tags file if not exists
-    #     new_tags_file = os.path.join(dir_test, 'explodetags.csv')
-    #     if not os.path.exists(new_tags_file):
-    #         new_data_tags = PreprocessTags(df_raw).formatter_tags_data()
-    #         new_data_tags.to_csv(new_tags_file, index=False, header=True)
-    #     else:
-    # new_data_tags = pd.read_csv('/Users/phuongnguyen/Documents/cours_BGD_Telecom_Paris_2024/Kit_Big_Data/dataset/explodetags.csv')
-    new_data_tags = DatabaseTable('explodetags').apply_streamlit_db() # with raw recipes with outliers
-    logger.info(f"Data tags loaded successfully, there are {new_data_tags.shape[0]} rows")
+    # load tag data with raw recipes with outliers
+    new_data_tags = DatabaseTable('explodetags').apply_streamlit_db() 
+    logger.info(
+        f"""
+        Data tags loaded successfully, 
+        there are {new_data_tags.shape[0]} rows"""
+        )
 
     logger.info(f"Get tags reference from user, there are {tags_reference}")
     # get recipes with tags target
     tags_instance = Tags(new_data_tags, tags_reference)
     ids_recipes_target = np.array(tags_instance.get_recipes_from_tags())
-    logger.info('number of recipes with tags target:', len(ids_recipes_target))
-
+    logger.info(
+        'number of recipes with tags target: %d', len(ids_recipes_target)
+        )
     try:
         len(ids_recipes_target) > len(tags_reference.split(','))
-        ids_recipes_target = pd.Series(ids_recipes_target.T) # convert to pandas series or to list of integer values
+        # convert to pandas series or to list of integer values
+        ids_recipes_target = pd.Series(ids_recipes_target.T) 
 
         # combine two tables to get recipes from tags target
-        raw_recipes_nutrition = df_raw.iloc[np.where(df_nooutlier['id'].isin(df_raw['id']))]
-        logger.info(f"Shape of all tags without outliers: {raw_recipes_nutrition.shape}")
+        raw_recipes_nutrition = (
+            df_raw.iloc[np.where(df_nooutlier['id'].isin(df_raw['id']))])
+        logger.info(
+            f"""
+            Shape of all tags without outliers: 
+            {raw_recipes_nutrition.shape}"""
+            )
         raw_recipes_nutrition['nutriscore'] = df_nooutlier['nutriscore']
         raw_recipes_nutrition['label'] = df_nooutlier['label']
-        ids_common = ids_recipes_target[ids_recipes_target.isin(df_nooutlier['id'])]
-        recipes_tags = raw_recipes_nutrition[raw_recipes_nutrition['id'].isin(ids_common)]
+        ids_common = ids_recipes_target[
+            ids_recipes_target.isin(df_nooutlier['id'])
+            ]
+        recipes_tags = raw_recipes_nutrition[
+            raw_recipes_nutrition['id'].isin(ids_common)
+            ]
 
         # get highest score and top 3 scores
         top3scores = np.unique(recipes_tags['nutriscore'])[-3:]
         maxscore = np.unique(recipes_tags['nutriscore'])[-1]
 
         # get recipes with highest score and top 3 scores
-        recipes_highestscore = recipes_tags[recipes_tags['nutriscore'] == maxscore]
+        recipes_highestscore = recipes_tags[
+            recipes_tags['nutriscore'] == maxscore
+            ]
 
         # Prepare dataset for analysis
         ids_recipes_target = ids_recipes_target.astype(int)
         dfsort = df_nooutlier[df_nooutlier['id'].isin(ids_recipes_target)]
-        dfsortname = df_raw[df_raw['id'].isin(ids_recipes_target)][['name', 'id']]
+        dfsortname = df_raw[
+            df_raw['id'].isin(ids_recipes_target)][['name', 'id']]
         dfsortinner = pd.merge(dfsort, dfsortname, on='id', how='inner')
 
     except AssertionError:
         logger.error('Any recipes have these tags target')
-        raise AssertionError('Any recipes have these tags target')
-    return recipes_tags, dfsortinner, recipes_highestscore #, recipes_top3scores, 
-
+    return recipes_tags, dfsortinner, recipes_highestscore 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
