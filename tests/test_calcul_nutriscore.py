@@ -4,12 +4,13 @@ import toml
 import os
 import sys
 from sqlalchemy import create_engine, text
-from unittest.mock import patch
+import unittest
+from unittest.mock import patch, MagicMock
 # Add the 'src' folder to the path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 
                                              '..', 'src')))
 
-from calcul_nutriscore import NutriScore, Plot
+from calcul_nutriscore import NutriScore, Plot, main
 from db.db_instance import db_instance
 
 query1 = 'SELECT * FROM "nutrition_withOutliers"'
@@ -294,3 +295,86 @@ def test_plot_distribution_label():
     with patch('matplotlib.pyplot.savefig') as savefig_mock:
         plot.plot_distribution_label(labels)
         savefig_mock.assert_called_once_with("test_label.png")
+
+class TestNutriScoreCalculation(unittest.TestCase):
+
+    @patch('calcul_nutriscore.create_engine')
+    @patch('calcul_nutriscore.toml.load')
+    @patch('calcul_nutriscore.NutriScore')
+    @patch('calcul_nutriscore.Plot')
+    def test_main_function(self,
+                            MockPlot,
+                              MockNutriScore,
+                                mock_toml_load,
+                                  mock_create_engine):
+        """
+        Test the main function of the NutriScore calculation script.
+
+        The main function should read the database configuration from the
+        secrets.toml file, create a database connection, fetch the necessary
+        data, and call the NutriScore and Plot classes.
+
+        Parameters
+        ----------
+        MockPlot : MagicMock
+            Mock object for the Plot class.
+        MockNutriScore : MagicMock
+
+        mock_toml_load : MagicMock
+            Mock object for the toml.load function.
+        mock_create_engine : MagicMock
+            Mock object for the create_engine function.
+        ----------
+        """
+
+        # Mock secrets.toml
+        mock_toml_load.return_value = {
+            'connections': {
+                'postgresql': {
+                    'username': 'user',
+                    'password': 'pass',
+                    'host': 'localhost',
+                    'port': 5432,
+                    'database': 'test_db'
+                }
+            }
+        }
+
+        # Mock create_engine and database connection
+        mock_conn = MagicMock()
+        mock_engine = MagicMock()
+        mock_engine.connect.return_value.__enter__.return_value = mock_conn
+        mock_create_engine.return_value = mock_engine
+
+        # Mock DataFrames for SQL queries
+        mock_conn.execute.return_value = None
+        mock_conn.fetchall.return_value = None
+        mock_df_raw_recipes = pd.DataFrame({'id': [1, 2],
+                                             'name': ['Recipe1', 'Recipe2']})
+        mock_df_nutrient_table = pd.DataFrame({'id': [1, 2],
+                                                'nutrient': [10, 20]})
+        mock_df_normalized_data = pd.DataFrame({'id': [1, 2],
+                                                 'normalized': [0.5, 0.8]})
+
+        with patch('pandas.read_sql_query',
+                    side_effect=[mock_df_raw_recipes,
+                                  mock_df_nutrient_table,
+                                    mock_df_normalized_data]):
+            # Mock NutriScore instance
+            mock_nutri_score_instance = MagicMock()
+            MockNutriScore.return_value = mock_nutri_score_instance
+
+            # Mock Plot class
+            mock_plot_instance = MagicMock()
+            MockPlot.return_value = mock_plot_instance
+
+            # Call the main function
+            main()
+
+            # Assertions
+            mock_toml_load.assert_called_once()
+            mock_create_engine.assert_called_once_with(
+                'postgresql://user:pass@localhost:5432/test_db'
+            )
+            mock_nutri_score_instance.stock_database.assert_called_once()
+            MockPlot.assert_called()
