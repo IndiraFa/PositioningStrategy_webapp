@@ -1,10 +1,6 @@
 import logging
 import streamlit as st
-import pandas as pd
-import numpy as np
-import scipy.stats as stats
 import plotly.express as px
-from PIL import Image
 import tags_nutriscore_correlation
 from core.asset_manager import get_asset_path
 
@@ -27,7 +23,6 @@ def display_datatable(all_recipes, label_choice='A'):
     if not df_choix.empty:
         st.dataframe(df_choix[['name', 'nutriscore', 'label', 'tags']],
                      hide_index=True)
-
 
 
 def display_choosing_labels(all_recipes_proccessed, all_recipes):
@@ -66,18 +61,18 @@ def display_choosing_labels(all_recipes_proccessed, all_recipes):
         if choix:
             with col1:
                 display_datatable(all_recipes, choix)
-                st.markdown(
-                    """
-                    We continue to see below the label chosen how the recipes
-                    are distributed in terms of nutrition. Statistical table
-                    shows the mean, standard deviation, min and max values of
-                    each nutrition.
-                    And the bar chart represents the distribution of the
-                    nutrition, compared to the reference values.
-                    """, unsafe_allow_html=True
-                )
+    st.markdown(
+        """
+        We continue to see below the label chosen how the recipes
+        are distributed in terms of nutrition. Statistical table
+        shows the mean, standard deviation, min and max values of
+        each nutrition.
+        And the bar chart represents the distribution of the
+        nutrition, compared to the reference values.
+        """, unsafe_allow_html=True
+    )
 
-    txt = st.warning(
+    st.warning(
         f'Statistical description of the recipes with the {choix} label'
     )
 
@@ -127,12 +122,12 @@ def display_bar_chart(dfsort_stats):
     """
     dfsort_stats = dfsort_stats.drop('nutriscore', axis=0)
     fig = px.bar(dfsort_stats, x=dfsort_stats.index, y='mean',
-        title='Nutrition of the recipes on bar chart with the selected label',
-        labels={'mean':'mean values', 'index':'Nutrition'})
-
+                 title="""Nutrition of the recipes on bar chart
+                 with the selected label""",
+                 labels={'mean': 'mean values', 'index': 'Nutrition'})
     logger.debug("Add reference line plot for each nutrition ")
     shapes = []
-    thresholds = [37,None,84,76,91,95,None]
+    thresholds = [37, None, 84, 76, 91, 95, None]
     for i, threshold in enumerate(thresholds):
         if threshold is not None:
             shapes.append(
@@ -152,6 +147,7 @@ def display_bar_chart(dfsort_stats):
     fig.update_layout(shapes=shapes)
 
     st.plotly_chart(fig)
+
 
 def select_to_process(all_recipes,
                       all_recipes_proccessed,
@@ -182,7 +178,7 @@ def select_to_process(all_recipes,
                 """
             )
 
-            st.subheader(f'Learning more with label study')
+            st.subheader('Learning more with label study')
 
             display_choosing_labels(all_recipes_proccessed, all_recipes)
 
@@ -277,6 +273,7 @@ def display_tagscloud():
         caption='Word cloud of tags',
         use_column_width=True
     )
+
 
 def display_select_tools():
     """
