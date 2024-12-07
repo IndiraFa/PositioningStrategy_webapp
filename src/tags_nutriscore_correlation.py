@@ -57,6 +57,7 @@ class DatabaseTable:
         """
         return load_streamlit_db(self.table_name, self.query)
 
+
 class Utils:
     """Utility class for various helper functions."""
 
@@ -232,7 +233,6 @@ class Tags:
                 logger.error("Any recipe have this tag")
 
 
-
 def main(arg):
     tags_reference = arg
     # create test directory to save test output
@@ -240,7 +240,7 @@ def main(arg):
     # Before analyse tags, we need to load the dataset and
     # extract tags from the dataset and save on new dataframe
     # load raw data
-    logger.info(f"Loading data from the database ...")
+    logger.info("Loading data from the database ...")
     # path = os.path.join(PARENT_DIR, 'dataset/RAW_recipes.csv')
     q1 = 'SELECT name, id, tags FROM "raw_recipes";'
     df_raw = DatabaseTable('raw_recipes', query=q1).apply_streamlit_db()
@@ -250,7 +250,11 @@ def main(arg):
 
     # load dataset no outlier
     df_nooutlier = DatabaseTable('NS_noOutliers').apply_streamlit_db()
-    logger.info(f"Data no outlier loaded successfully, there are {df_nooutlier.shape[0]} rows")
+    logger.info(
+        f"""
+        Data no outlier loaded successfully, there are
+        {df_nooutlier.shape[0]} rows"""
+        )
 
     # load tag data with raw recipes with outliers
     new_data_tags = DatabaseTable('explodetags').apply_streamlit_db()
@@ -307,6 +311,7 @@ def main(arg):
     except AssertionError:
         logger.error('Any recipes have these tags target')
     return recipes_tags, dfsortinner, recipes_highestscore
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
