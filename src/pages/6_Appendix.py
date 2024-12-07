@@ -63,12 +63,11 @@ def display_nutriscore_description():
         """
         ## Nutriscore calculation
         We built a Nutrition Score based on **daily value intake
-        recommandations** 
-        (ref) and on available data from the recipes.<br>
-        Starting from the **maximum value of 14**, the Nutri-Score decreases as
-         the nutritional quality of the recipe decreases.<br>
+        recommandations** (ref) and on available data from the recipes.<br>
+        Starting from the **maximum value of 14**, the Nutri-Score decreases 
+        as the nutritional quality of the recipe decreases.<br>
         The **% of calories** that represents a recipe is based on the declared
-         number of calories **per portion**.
+        number of calories **per portion**.
         The **other nutrients** were **normalized by the daily intake 
         recommandations** (as if the recipe represented the full 2000 kcal 
         per day).
@@ -76,8 +75,7 @@ def display_nutriscore_description():
         following characteristics:<br>
             &nbsp;&nbsp;&nbsp;&nbsp;- a reasonable amount of calories per 
             portion (a portion should not exceed 37% of the daily intake of 
-            2000 calories)
-            <br>
+            2000 calories)<br>
             &nbsp;&nbsp;&nbsp;&nbsp;- a low amount of sugar<br>
             &nbsp;&nbsp;&nbsp;&nbsp;- a low amount of saturated fat<br>
             &nbsp;&nbsp;&nbsp;&nbsp;- a low amount of sodium<br>
@@ -90,8 +88,8 @@ def display_nutriscore_description():
 
 def display_nutriscore_grid():
     """
-    Display a text description of the Nutriscore calculation grid then display
-    the grid itself and the letter grade scale.
+    Display a text description of the Nutriscore calculation grid 
+    then display the grid itself and the letter grade scale.
 
     Returns
     -------
@@ -104,13 +102,12 @@ def display_nutriscore_grid():
     st.write(
         """
         The Nutriscore is calculated as follows based on the grid below:<br>
-        for each nutrient category, if the value is below the first line, no 
-        point is substracted. If the value is between the first and the second 
-        line, 1 point is substracted. If the value is between the second and 
-        the third line, 1.25 points are substracted, etc. For each nutrient 
+        for each nutrient category, if the value is below the first line, 
+        no point is subtracted. If the value is between the first and the 
+        second line, 1 point is subtracted. If the value is between the second 
+        and the third line, 1.25 points are subtracted, etc. For each nutrient 
         category, there is a maximum value after which no extra point is 
-        substracted.
-        For proteins, we look at minus the value.
+        subtracted. For proteins, we look at the negative value.
         """,
         unsafe_allow_html=True,
     )
@@ -119,13 +116,14 @@ def display_nutriscore_grid():
     logger.debug("Nutriscore grid displayed")
     st.write(
         """
-        For an easier interpretation, the Nutriscore is then converted into a 
-        letter grade from A to E, with A being the best grade and E the worst 
-        grade.
+        For an easier interpretation, the Nutriscore is then converted into 
+        a letter grade from A to E, with A being the best grade and E the 
+        worst grade.
         """
     )
     st.image(get_asset_path("images/scale.png"))
     logger.debug("Nutriscore letter grade scale displayed")
+
 
 
 def display_example_calculation(df2: pd.DataFrame):
@@ -144,8 +142,9 @@ def display_example_calculation(df2: pd.DataFrame):
     st.write("### Example of Nutriscore calculation")
     st.write(
         """
-        This is an example of the calculation of the Nutriscore for the recipe 
-        of the Creamy chicken curry with the following nutritional values:
+        This is an example of the calculation of the Nutriscore for the 
+        recipe of the Creamy chicken curry with the following nutritional 
+        values:
         """
     )
     logger.debug("Example of Nutriscore calculation displayed")
@@ -164,6 +163,7 @@ def display_example_calculation(df2: pd.DataFrame):
     logger.debug("Example of Nutriscore calculation displayed")
 
 
+
 def display_references():
     """
     Display the references used for the Nutriscore calculation
@@ -176,9 +176,9 @@ def display_references():
         """
         ### References
 
-        [1] Method for calculating the official Nutriscore in France :
+        [1] Method for calculating the official Nutriscore in France: 
         https://docs.becpg.fr/fr/utilization/score5C.html<br>
-        [2] Daily recommendations for the main nutrients :
+        [2] Daily recommendations for the main nutrients: 
         https://eur-lex.europa.eu/legal-content/FR/TXT/PDF/?uri=CELEX:02011R1169-20180101<br>
         """,
         unsafe_allow_html=True,
