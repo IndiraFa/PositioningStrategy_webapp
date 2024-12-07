@@ -61,16 +61,16 @@ def display_choosing_labels(all_recipes_proccessed, all_recipes):
         if choix:
             with col1:
                 display_datatable(all_recipes, choix)
-                st.markdown(
-                    """
-                    We continue to see below the label chosen how the recipes
-                    are distributed in terms of nutrition. Statistical table
-                    shows the mean, standard deviation, min and max values of
-                    each nutrition.
-                    And the bar chart represents the distribution of the
-                    nutrition, compared to the reference values.
-                    """, unsafe_allow_html=True
-                )
+    st.markdown(
+        """
+        We continue to see below the label chosen how the recipes
+        are distributed in terms of nutrition. Statistical table
+        shows the mean, standard deviation, min and max values of
+        each nutrition.
+        And the bar chart represents the distribution of the
+        nutrition, compared to the reference values.
+        """, unsafe_allow_html=True
+    )
 
     st.warning(
         f'Statistical description of the recipes with the {choix} label'
