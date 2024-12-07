@@ -170,6 +170,7 @@ def kurtosis(data, column):
 def label_percentage(data, label):
     """
     Calculate the percentage of recipes with a specific Nutri-Score label.
+
     Parameters
     ----------
     data: pd.DataFrame
@@ -179,7 +180,7 @@ def label_percentage(data, label):
 
     Returns
     -------
-    float
+    label_percent: float
     """
     try:
         label_percent = data[data['label'] == label].shape[0] / data.shape[0]

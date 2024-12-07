@@ -36,11 +36,15 @@ class Datatools:
         """
         Extracts numerical values from a string by using regular expressions
 
-        Arguments:
-        string : str : input string containing numerical values
+        Parameters
+        ----------
+        string : str
+            input string containing numerical values
 
-        Returns:
-        list : extracted numerical values
+        Returns
+        -------
+        list
+            extracted numerical values
         """
         try:
             logger.debug("Extract numbers from the string using regular\
@@ -70,6 +74,7 @@ class Preprocessing:
         Dictionary containing the configuration parameters
 
     Methods
+    -------
 
     get_raw_nutrition()
         Extracts the 'id' and 'nutrition' columns from the raw data
@@ -118,11 +123,14 @@ class Preprocessing:
         """
         Extracts the 'id' and 'nutrition' columns from the raw data
 
-        Arguments:
+        Parameters
+        ----------
         None
 
-        Returns:
-        pd.DataFrame : DataFrame containing the 'id' and 'nutrition' columns
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame containing the 'id' and 'nutrition' columns
         """
         try:
             logger.debug("Extract 'id' and 'nutrition' columns from raw data")
@@ -137,11 +145,14 @@ class Preprocessing:
         Formats the nutrition data by extracting numerical values and splitting
         them into separate columns
 
-        Arguments:
+        Parameters
+        ----------
         None
 
-        Returns:
-        pd.DataFrame : DataFrame containing the formatted nutrition data
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame containing the formatted nutrition data
         """
         try:
             logger.debug("Format the nutrition data by extracting\
@@ -168,11 +179,14 @@ class Preprocessing:
         """
         Normalizes the nutrition data based on daily values
         
-        Arguments:
+        Parameters
+        ----------
         None
 
-        Returns:
-        pd.DataFrame : DataFrame containing the normalized nutrition data
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame containing the normalized nutrition data
         """
         try:
             logger.debug("Normalize the nutrition data \
@@ -202,11 +216,14 @@ class Preprocessing:
         """
         Filters out the outliers from the normalized data
 
-        Arguments:
+        Parameters
+        ----------
         None
 
-        Returns:
-        pd.DataFrame : DataFrame containing the filtered data
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame containing the filtered data
         """
         try:
             logger.debug("Copy the normalized data for pre-filtering")
@@ -252,12 +269,15 @@ class Preprocessing:
         Applies Gaussian normalization to the data, and filters out the 
         outliers that are greater than or equal to 3
 
-        Arguments:
+        Parameters
+        ----------
         None
 
-        Returns:
-        DF_noOutliers, DF_outliers : pd.DataFrame : DataFrames containing the
-            Gaussian normalized data without outliers and the outliers
+        Returns
+        -------
+        DF_noOutliers, DF_outliers : pd.DataFrame
+            DataFrames containing the Gaussian normalized data without outliers
+            and the outliers
         """
         gauss_configs = {'colname': [
             'dv_calories_%',
@@ -314,14 +334,18 @@ class Preprocessing:
         """
         Denormalizes the Gaussian normalized data
 
-        Arguments:
-        DF_noOutliers : pd.DataFrame : DataFrame containing the Gaussian 
-            normalized data without outliers
-        DF_outliers : pd.DataFrame : DataFrame containing the outliers
+        Parameters
+        ----------
+        DF_noOutliers : pd.DataFrame
+            DataFrame containing the Gaussian normalized data without outliers
+        DF_outliers : pd.DataFrame
+            DataFrame containing the outliers
 
-        Returns:
-        finalDF_noOutliers, finalDF_outliers : pd.DataFrame : DataFrames
-            containing the denormalized data without outliers and the outliers
+        Returns
+        -------
+        finalDF_noOutliers, finalDF_outliers : pd.DataFrame
+            DataFrames containing the denormalized data without outliers and
+            the outliers
         """
         try:
             logger.debug("Denormalize the Gaussian normalized data")
@@ -357,10 +381,12 @@ class Preprocessing:
         """
         Creates a PostgreSQL database and stores the preprocessed data
 
-        Arguments:
+        Parameters
+        ----------
         None
 
-        Returns:
+        Returns
+        -------
         None
         """
         logger.debug("Read the secrets.toml file")
@@ -423,15 +449,14 @@ def main():
     Main function to preprocess the raw data and store the preprocessed data
     in a PostgreSQL database
 
-    Arguments:
+    Parameters
+    ----------
     None
 
-    Returns:
-
-    nutrition_table : pd.DataFrame : DataFrame containing the formatted
-        nutrition data
-    nutrition_table_normal : pd.DataFrame : DataFrame containing the
-        normalized nutrition data
+    Returns
+    -------
+    nutrition_table, nutrition_table_normal : pd.DataFrame
+        DataFrames containing the formatted and normalized nutrition data
     """
     logger.debug("Reads the secrets.toml file")
     secrets = toml.load('secrets.toml')
