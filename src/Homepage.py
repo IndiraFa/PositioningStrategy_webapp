@@ -27,15 +27,17 @@ def get_cached_data(_db_instance: Database, query1:str, query2:str):
     """
     Get the data from the database and cache it.
 
-    Args:
-    - db_instance (Database): Instance de la classe Database pour effectuer
-      les requêtes
-    - query1 (str): SQL query to fetch data with outliers
-    - query2 (str): SQL query to fetch data without outliers
+    Parameters
+    ----------
+    db_instance (Database): Instance of the class Database to perform
+    the queries
+    query1 (str): SQL query to fetch data with outliers
+    query2 (str): SQL query to fetch data without outliers
 
-    Returns:
-    - data_with_outliers (pd.DataFrame): Data with outliers
-    - data_no_outliers (pd.DataFrame): Data without outliers
+    Returns
+    -------
+    data_with_outliers (pd.DataFrame): Data with outliers
+    data_no_outliers (pd.DataFrame): Data without outliers
     """
     logger.info("Fetching data from the database using db_instance")
     try:
@@ -328,16 +330,19 @@ def display_distribution_analysis(data_with_outliers: pd.DataFrame,
 
 
 
-def display_label_distribution(data_with_outliers: pd.DataFrame, data_no_outliers: pd.DataFrame):
+def display_label_distribution(
+        data_with_outliers: pd.DataFrame, data_no_outliers: pd.DataFrame):
     """
     Display the label distribution of the Nutri-Score.
     
-    Args:
-    - data_with_outliers (pd.DataFrame): Data with outliers
-    - data_no_outliers (pd.DataFrame): Data without outliers
+    Parameters
+    ----------
+    data_with_outliers (pd.DataFrame): Data with outliers
+    data_no_outliers (pd.DataFrame): Data without outliers
 
-    Returns:
-    - None
+    Returns
+    ---------
+    None
     """
     logger.debug("Displaying label distribution")
     st.subheader("Nutri-Score label distribution")
@@ -403,8 +408,9 @@ def main():
     """
     Main function to run the analysis of the Nutri-Score.
 
-    Returns:
-    - None
+    Returns
+    ------
+    None
     """
 
     query1 = """
@@ -414,15 +420,17 @@ def main():
     query2 = """
     SELECT * FROM "NS_noOutliers";
     """
-    logger.info("Starting main function")
-    data_with_outliers, data_no_outliers = get_cached_data(db_instance,query1,query2,)
+    logger.info("Starting displaying Homepage")
+    data_with_outliers, data_no_outliers = get_cached_data(
+        db_instance,query1,query2,
+    )
     display_header()
     "---"
     results = analyze_data(data_with_outliers, data_no_outliers)
     display_histograms(data_with_outliers, data_no_outliers, results)
     display_distribution_analysis(data_with_outliers, data_no_outliers)
     display_label_distribution(data_with_outliers, data_no_outliers)
-    logger.info("Finished main function")
+    logger.info("Finished displaying Homepage")
 
 if __name__ == "__main__":
     try:
