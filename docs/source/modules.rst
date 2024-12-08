@@ -7,6 +7,7 @@ src
    Homepage
    calcul_nutriscore
    core
+   db
    interaction_correlation_analysis
    linear_regression_nutrition
    nutriscore_analysis
@@ -14,4 +15,3 @@ src
    preprocess
    recipe_correlation_analysis
    tags_nutriscore_correlation
-   utils

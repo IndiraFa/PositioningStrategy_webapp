@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 from sqlalchemy import create_engine
 import streamlit as st
@@ -11,17 +12,18 @@ class Database:
         Initialize a database connection using SQLAlchemy.
         Configurations are retrieved from Streamlit secrets.
         """
-        configs = {
-            "db_host": st.secrets["connections"]["postgresql"]["host"],
-            "db_port": st.secrets["connections"]["postgresql"]["port"],
-            "db_user": st.secrets["connections"]["postgresql"]["username"],
-            "db_password": st.secrets["connections"]["postgresql"]["password"],
-            "db_name": st.secrets["connections"]["postgresql"]["database"]
-        }
+        # Récupérer les configurations depuis Streamlit secrets ou variables d'environnement
+        self.db_host = st.secrets["connections"]["postgresql"].get("host", os.getenv("DB_HOST"))
+        self.db_port = st.secrets["connections"]["postgresql"].get("port", os.getenv("DB_PORT"))
+        self.db_user = st.secrets["connections"]["postgresql"].get("username", os.getenv("DB_USER"))
+        self.db_password = st.secrets["connections"]["postgresql"].get("password", os.getenv("DB_PASSWORD"))
+        self.db_name = st.secrets["connections"]["postgresql"].get("database", os.getenv("DB_NAME"))
+
+        # Créer l'URL de connexion pour SQLAlchemy
         self.engine = create_engine(
-            f"postgresql://{configs['db_user']}:{configs['db_password']}@"
-            f"{configs['db_host']}:{configs['db_port']}/{configs['db_name']}"
+            f"postgresql://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
         )
+
         logger.info("Database connection initialized")
 
     def fetch_data(self, query: str) -> pd.DataFrame:
@@ -37,7 +39,7 @@ class Database:
         try:
             logger.debug(f"Executing query: {query}")
             data = pd.read_sql_query(query, self.engine)
-            logger.info(f"Query executed successfully: {query}")
+            logger.debug(f"Query executed successfully: {query}")
             return data
         except Exception as e:
             logger.error(f"An error occurred while executing the query: {e}")
