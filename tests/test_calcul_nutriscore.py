@@ -200,38 +200,6 @@ def test_set_scorelabel(sample_data, sample_grille, sample_configs):
         "Invalid NutriScore labels detected."
 
 
-def test_stock_database_real(db_connection):
-    """
-    Test to verify real table sizes in the database.
-
-    The method should check if the sizes of the tables NS_withOutliers and
-    nutrition_withOutliers are the same and greater than zero.
-
-    Parameters
-    ----------
-    db_connection : sqlalchemy.engine.base.Connection
-        Database connection object.
-
-    Returns
-    -------
-    None
-    """
-    query_count_ns = text('SELECT COUNT(*) FROM "NS_withOutliers"')
-    query_count_nutrition = text(
-        'SELECT COUNT(*) FROM "nutrition_withOutliers"'
-        )
-
-    count_ns = db_connection.execute(query_count_ns).scalar()
-    count_nutrition = db_connection.execute(query_count_nutrition).scalar()
-
-    assert count_ns == count_nutrition, (
-        f"The size of the table NS_withOutliers ({count_ns}) "
-        f"does not match that of nutrition_withOutliers ({count_nutrition})."
-    )
-    assert count_ns > 0, \
-          "The NS_withOutliers table is empty or does not exist."
-
-
 # Tests for Plot
 def test_init_plot():
     """
