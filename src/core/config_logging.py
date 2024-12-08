@@ -4,7 +4,7 @@ from logging.handlers import TimedRotatingFileHandler
 import os
 
 
-def configure_logging(level: int = logging.INFO) -> logging.Logger:
+def configure_logging(level: int = logging.DEBUG) -> logging.Logger:
     """
     Configures a logging system for the application with file rotation.
 
@@ -19,6 +19,11 @@ def configure_logging(level: int = logging.INFO) -> logging.Logger:
     Returns:
         logging.Logger: Configured logger instance for the application.
     """
+
+    # Read DEBUG_MODE environment variable to set the log level
+    debug_mode = os.getenv("DEBUG_MODE", "false").lower() == "true"
+    log_level = logging.DEBUG if debug_mode else logging.INFO
+
     # Ensure the logs directory exists
     if not os.path.exists("logs"):
         os.makedirs("logs")
@@ -42,7 +47,7 @@ def configure_logging(level: int = logging.INFO) -> logging.Logger:
 
     # Set up the root logger
     logger = logging.getLogger()
-    logger.setLevel(level)
+    logger.setLevel(log_level)
     logger.addHandler(file_handler)
     logger.addHandler(console_handler)
 
