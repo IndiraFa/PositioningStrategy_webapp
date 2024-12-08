@@ -84,6 +84,7 @@ jobs:
 
     - name: Run tests with coverage
       run: |
+        echo "PYTHONPATH=src" >> $GITHUB_ENV
         coverage run --source=src -m pytest
         coverage report
 
