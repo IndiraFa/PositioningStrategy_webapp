@@ -285,7 +285,7 @@ def main(arg):
             {raw_recipes_nutrition.shape}"""
             )
         raw_recipes_nutrition['nutriscore'] = df_nooutlier['nutriscore']
-        raw_recipes_nutrition['label'] = df_nooutlier['label']
+        raw_recipes_nutrition.loc[:,'label'] = df_nooutlier['label'].values
         ids_common = ids_recipes_target[
             ids_recipes_target.isin(df_nooutlier['id'])
             ]

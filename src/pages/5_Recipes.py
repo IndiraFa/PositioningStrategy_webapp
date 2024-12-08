@@ -121,10 +121,13 @@ def display_bar_chart(dfsort_stats):
         None
     """
     dfsort_stats = dfsort_stats.drop('nutriscore', axis=0)
-    fig = px.bar(dfsort_stats, x=dfsort_stats.index, y='mean',
-                 title="""Nutrition of the recipes on bar chart
-                 with the selected label""",
-                 labels={'mean': 'mean values', 'index': 'Nutrition'})
+    fig = px.bar(
+        dfsort_stats, x=dfsort_stats.index, y='mean',
+        title=
+        """
+        Nutrition of the recipes on bar chart with the selected label
+        """,
+        labels={'mean': 'mean values', 'index': 'Nutrition'})
     logger.debug("Add reference line plot for each nutrition ")
     shapes = []
     thresholds = [37, None, 84, 76, 91, 95, None]

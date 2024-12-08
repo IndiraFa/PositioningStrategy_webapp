@@ -67,8 +67,19 @@ jobs:
     
     - name: Install dependancies
       run: |
-        python -m pip install pytest coverage
-        python -m pip install -r requirements.txt
+        python -m pip install pytest coverage pandas scikit-learn
+
+    - name: Create secrets file if not exists
+      run: |
+        mkdir -p .streamlit
+        if [ ! -f .streamlit/secrets.toml ]; then
+          echo "[connections.postgresql]" > .streamlit/secrets.toml
+          echo "host = 'localhost'" >> .streamlit/secrets.toml
+          echo "port = '5432'" >> .streamlit/secrets.toml
+          echo "username = 'test_user'" >> .streamlit/secrets.toml
+          echo "password = 'test_password'" >> .streamlit/secrets.toml
+          echo "database = 'test_db'" >> .streamlit/secrets.toml
+        fi
 
     - name: Run tests with coverage
       run: |

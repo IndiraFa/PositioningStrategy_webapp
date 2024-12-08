@@ -298,83 +298,94 @@ def test_plot_distribution_label():
 
 class TestNutriScoreCalculation(unittest.TestCase):
 
-    @patch('calcul_nutriscore.create_engine')
-    @patch('calcul_nutriscore.toml.load')
+    @patch('calcul_nutriscore.db_instance')
     @patch('calcul_nutriscore.NutriScore')
     @patch('calcul_nutriscore.Plot')
-    def test_main_function(self,
-                            MockPlot,
-                              MockNutriScore,
-                                mock_toml_load,
-                                  mock_create_engine):
+    def test_main_function(self, MockPlot, MockNutriScore, mock_db_instance):
         """
         Test the main function of the NutriScore calculation script.
-
-        The main function should read the database configuration from the
-        secrets.toml file, create a database connection, fetch the necessary
-        data, and call the NutriScore and Plot classes.
 
         Parameters
         ----------
         MockPlot : MagicMock
             Mock object for the Plot class.
         MockNutriScore : MagicMock
+            Mock object for the NutriScore class.
+        mock_db_instance : MagicMock
+            Mock object for the database instance singleton.
 
-        mock_toml_load : MagicMock
-            Mock object for the toml.load function.
-        mock_create_engine : MagicMock
-            Mock object for the create_engine function.
-        ----------
+        Returns
+        -------
+        None
         """
 
-        # Mock secrets.toml
-        mock_toml_load.return_value = {
-            'connections': {
-                'postgresql': {
-                    'username': 'user',
-                    'password': 'pass',
-                    'host': 'localhost',
-                    'port': 5432,
-                    'database': 'test_db'
-                }
+        # Mock DataFrames returned by db_instance
+        mock_df_raw_recipes = pd.DataFrame({'id': [1, 2], 'name': ['Recipe1', 'Recipe2']})
+        mock_df_nutrient_table = pd.DataFrame({'id': [1, 2], 'nutrient': [10, 20]})
+        mock_df_normalized_data = pd.DataFrame({'id': [1, 2], 'normalized': [0.5, 0.8]})
+
+        mock_db_instance.fetch_data.side_effect = [
+            mock_df_raw_recipes,
+            mock_df_nutrient_table,
+            mock_df_normalized_data
+        ]
+
+        # Mock NutriScore instance and behavior
+        mock_nutri_score_instance = MagicMock()
+        MockNutriScore.return_value = mock_nutri_score_instance
+
+        # Mock Plot instances
+        mock_plot_instance = MagicMock()
+        MockPlot.return_value = mock_plot_instance
+
+        # Call the main function
+        main()
+
+        # Assertions for db_instance
+        mock_db_instance.fetch_data.assert_any_call("SELECT * FROM raw_recipes")
+        mock_db_instance.fetch_data.assert_any_call("SELECT * FROM nutrient_table")
+        mock_db_instance.fetch_data.assert_any_call('SELECT * FROM "nutrition_withOutliers"')
+
+        # Assertions for NutriScore
+        MockNutriScore.assert_called_once_with(
+            mock_df_normalized_data,
+            mock_df_nutrient_table,
+            {
+                'nutritioncolname': [
+                    'calories',
+                    'total_fat_%',
+                    'sugar_%',
+                    'sodium_%',
+                    'protein_%',
+                    'sat_fat_%',
+                    'carbs_%'
+                ],
+                'grillecolname': [
+                    'dv_calories_%',
+                    'dv_sat_fat_%',
+                    'dv_sugar_%',
+                    'dv_sodium_%',
+                    'dv_protein_%'
+                ],
+                'dv_calories': 2000
             }
-        }
+        )
+        mock_nutri_score_instance.stock_database.assert_called_once()
 
-        # Mock create_engine and database connection
-        mock_conn = MagicMock()
-        mock_engine = MagicMock()
-        mock_engine.connect.return_value.__enter__.return_value = mock_conn
-        mock_create_engine.return_value = mock_engine
-
-        # Mock DataFrames for SQL queries
-        mock_conn.execute.return_value = None
-        mock_conn.fetchall.return_value = None
-        mock_df_raw_recipes = pd.DataFrame({'id': [1, 2],
-                                             'name': ['Recipe1', 'Recipe2']})
-        mock_df_nutrient_table = pd.DataFrame({'id': [1, 2],
-                                                'nutrient': [10, 20]})
-        mock_df_normalized_data = pd.DataFrame({'id': [1, 2],
-                                                 'normalized': [0.5, 0.8]})
-
-        with patch('pandas.read_sql_query',
-                    side_effect=[mock_df_raw_recipes,
-                                  mock_df_nutrient_table,
-                                    mock_df_normalized_data]):
-            # Mock NutriScore instance
-            mock_nutri_score_instance = MagicMock()
-            MockNutriScore.return_value = mock_nutri_score_instance
-
-            # Mock Plot class
-            mock_plot_instance = MagicMock()
-            MockPlot.return_value = mock_plot_instance
-
-            # Call the main function
-            main()
-
-            # Assertions
-            mock_toml_load.assert_called_once()
-            mock_create_engine.assert_called_once_with(
-                'postgresql://user:pass@localhost:5432/test_db'
-            )
-            mock_nutri_score_instance.stock_database.assert_called_once()
-            MockPlot.assert_called()
+        # Assertions for Plot
+        MockPlot.assert_any_call(
+            mock_nutri_score_instance.nutriscore['nutriscore'],
+            title='NutriScore Distribution',
+            xlabel='NutriScore',
+            ylabel='Number of Recipes',
+            output_path='nutriscore_distribution.png'
+        )
+        MockPlot.assert_any_call(
+            mock_nutri_score_instance.nutriscore_label['label'],
+            title='NutriScore Label Distribution',
+            xlabel='Labels',
+            ylabel='Number of Recipes',
+            output_path='nutriscore_label_distribution.png'
+        )
+        mock_plot_instance.plot_distribution.assert_called_once()
+        mock_plot_instance.plot_distribution_label.assert_called_once_with(labels=['A', 'B', 'C', 'D', 'E'])
