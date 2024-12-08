@@ -2,13 +2,17 @@ import os
 import sys
 import pytest
 from unittest.mock import patch
-from core.asset_manager import get_asset_path
 
 # Add the 'src' directory to the system path for importing modules
 sys.path.insert(
     0,
     os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src'))
 )
+
+from core.asset_manager import get_asset_path
+
+
+
 @pytest.fixture
 def mock_base_dir():
     """
