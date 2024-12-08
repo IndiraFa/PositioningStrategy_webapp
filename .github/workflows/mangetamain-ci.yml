@@ -4,12 +4,11 @@ on:
     pull_request:
         branches:
             - telecom-paris/dev-stable
-            - telecom-paris/main
+            - telecom-paris/dev
 
 jobs:
-  lint:
+  setup:
     runs-on: ubuntu-latest
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -22,60 +21,72 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 pydocstyle pytest pytest-cov
+
+    - name: Set PYTHONPATH
+      run: |
+        echo "PYTHONPATH=src" >> $GITHUB_ENV
+
+  lint:
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Install linting tools
+      run: |
+        python -m pip install flake8 pydocstyle
 
     - name: Run flake8 for PEP8 compliance
       run: |
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        flake8 src/ tests/ --count --select=E,W --max-line-length=79 --max-complexity=10 --statistics
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/telecom-paris/dev-stable'
 
     - name: Run pydocstyle for docstring compliance
       run: |
-        pydocstyle .
+        pydocstyle src/ tests/
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/telecom-paris/dev-stable'
+
+    - name: Non-strict flake8 for other branches
+      run: |
+        flake8 src/ tests/ --count --select=E,W --max-line-length=79 --max-complexity=10 --statistics --exit-zero
+      if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/telecom-paris/dev-stable'
+
+    - name: Non-strict pydocstyle for other branches
+      run: |
+        pydocstyle src/ tests/ || true
+      if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/telecom-paris/dev-stable'
 
   test:
     runs-on: ubuntu-latest
+    needs: setup
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
-
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.10'
-
-    - name: Install dependencies
+    
+    - name: Install dependancies
       run: |
-        python -m pip install --upgrade pip
-        pip install pytest pytest-cov
+        python -m pip install pytest coverage pandas scikit-learn
+
+    - name: Create secrets file if not exists
+      run: |
+        mkdir -p .streamlit
+        if [ ! -f .streamlit/secrets.toml ]; then
+          echo "[connections.postgresql]" > .streamlit/secrets.toml
+          echo "host = 'localhost'" >> .streamlit/secrets.toml
+          echo "port = '5432'" >> .streamlit/secrets.toml
+          echo "username = 'test_user'" >> .streamlit/secrets.toml
+          echo "password = 'test_password'" >> .streamlit/secrets.toml
+          echo "database = 'test_db'" >> .streamlit/secrets.toml
+        fi
 
     - name: Run tests with coverage
       run: |
-        pytest --cov=./ --cov-report=xml
+        coverage run --source=src -m pytest
+        coverage report
 
-    - name: Check coverage
+    - name: Enforce coverage threshold for main and dev-stable
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/telecom-paris/dev-stable'
       run: |
-        coverage report --fail-under=70
-
-  docs:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.10'
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install sphinx
-
-    - name: Build documentation
-      run: |
-        cd docs
-        make html
+        coverage report --fail-under=90

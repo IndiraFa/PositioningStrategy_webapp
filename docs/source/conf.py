@@ -6,27 +6,34 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'Mangetamain_webapp'
-copyright = '2024, Indira & Phuong & Darryl & Manoel'
-author = 'Indira & Phuong & Darryl & Manoel'
-release = '0.0.1'
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath('../../src'))
+
+project = 'Mangetamain Webapp'
+copyright = '2024, Indira, Phuong, Darryl, Manoel'
+author = 'Indira, Phuong, Darryl, Manoel'
+release = '0.1.0'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.viewcode',
+    'sphinx.ext.autodoc',         # Automatically generates documentation from docstrings
+    'sphinx.ext.napoleon',        # Supports Google and NumPy style docstrings
+    'sphinx.ext.viewcode',        # Adds links to highlighted source code
+    'sphinx.ext.autosummary',     # Generates summary tables for modules/classes
+    #'sphinx_autodoc_typehints',
 ]
 
 templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = []
 
 
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']

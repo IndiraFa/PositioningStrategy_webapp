@@ -7,8 +7,11 @@ REM Command file for Sphinx documentation
 if "%SPHINXBUILD%" == "" (
 	set SPHINXBUILD=sphinx-build
 )
-set SOURCEDIR=.
-set BUILDDIR=_build
+set SOURCEDIR=source
+set BUILDDIR=build
+
+REM Définir PYTHONPATH pour inclure le dossier src
+set PYTHONPATH=%~dp0..\src
 
 %SPHINXBUILD% >NUL 2>NUL
 if errorlevel 9009 (
