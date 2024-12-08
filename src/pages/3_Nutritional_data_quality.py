@@ -278,8 +278,6 @@ def main():
         ON fd.id = ns.id;
     """
 
-    print(type(query))
-
 
     # Fetch data from the database using db_instance
     filtered_data = get_cached_data(db_instance, query)
