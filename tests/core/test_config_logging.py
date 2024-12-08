@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 import pytest
 from datetime import datetime
 from unittest.mock import patch, MagicMock
@@ -8,7 +9,7 @@ from core.config_logging import configure_logging
 # Add the 'src' directory to the system path for importing modules
 sys.path.insert(
     0,
-    os.path.abspath(os.path.join(os.path.dirname(__file__), '../src'))
+    os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src'))
 )
 
 @pytest.fixture
