@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import plotly.express as px
 import pandas as pd
@@ -16,9 +17,8 @@ from nutriscore_analysis import (
 )
 st.set_page_config(layout="wide")
 
-
 configure_logging()
-logger = logging.getLogger("Homepage")
+logger = logging.getLogger("HomePage")
 
 logger.info("Starting the application")
 
@@ -39,7 +39,7 @@ def get_cached_data(_db_instance: Database, query1:str, query2:str):
     data_with_outliers (pd.DataFrame): Data with outliers
     data_no_outliers (pd.DataFrame): Data without outliers
     """
-    logger.info("Fetching data from the database using db_instance")
+    logger.debug("Fetching data from the database using db_instance")
     try:
         data_with_outliers = db_instance.fetch_data(query1)
         data_no_outliers = db_instance.fetch_data(query2)
@@ -430,7 +430,6 @@ def main():
     display_histograms(data_with_outliers, data_no_outliers, results)
     display_distribution_analysis(data_with_outliers, data_no_outliers)
     display_label_distribution(data_with_outliers, data_no_outliers)
-    logger.info("Finished displaying Homepage")
 
 if __name__ == "__main__":
     try:

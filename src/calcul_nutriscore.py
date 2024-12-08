@@ -1,9 +1,8 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from pathlib import Path
 import seaborn as sns
-from sqlalchemy import create_engine
+from db.db_instance import db_instance
 import toml
 import logging
 
@@ -296,69 +295,56 @@ def main():
     -------
     None
     """
-    # Load database credentials from a TOML file
-    secrets = toml.load('secrets.toml')
-    postgresql_config = secrets['connections']['postgresql']
-    try:
-        # Connect to the PostgreSQL database
-        engine = create_engine(
-            f'postgresql://{postgresql_config["username"]}:{postgresql_config["password"]}'
-                               f'@{postgresql_config["host"]}:{postgresql_config["port"]}/{postgresql_config["database"]}')
-        with engine.connect() as conn:
-            # Load data from the database
-            df = pd.read_sql_query("SELECT * FROM raw_recipes", conn)
-            df_grille = pd.read_sql_query("SELECT * FROM nutrient_table", conn)
-            df_normalized_data = pd.read_sql_query(
-                'SELECT * FROM "nutrition_withOutliers"',
-                conn
-            )
+    
+    df = db_instance.fetch_data("SELECT * FROM raw_recipes")
+    df_grille = db_instance.fetch_data("SELECT * FROM nutrient_table")
+    df_normalized_data = db_instance.fetch_data('SELECT * FROM "nutrition_withOutliers"')
 
-        # Configuration for the NutriScore calculation
-        configs = {
-            'nutritioncolname': [
-                'calories',
-                'total_fat_%',
-                'sugar_%',
-                'sodium_%',
-                'protein_%',
-                'sat_fat_%',
-                'carbs_%'
-            ],
-            'grillecolname': [
-                'dv_calories_%',
-                'dv_sat_fat_%',
-                'dv_sugar_%',
-                'dv_sodium_%',
-                'dv_protein_%'
-            ],
-            'dv_calories': 2000
-        }
+    # Configuration for the NutriScore calculation
+    configs = {
+        'nutritioncolname': [
+            'calories',
+            'total_fat_%',
+            'sugar_%',
+            'sodium_%',
+            'protein_%',
+            'sat_fat_%',
+            'carbs_%'
+        ],
+        'grillecolname': [
+            'dv_calories_%',
+            'dv_sat_fat_%',
+            'dv_sugar_%',
+            'dv_sodium_%',
+            'dv_protein_%'
+        ],
+        'dv_calories': 2000
+    }
 
-        # Calculate NutriScore and store results in the database
-        nutri_score_instance = NutriScore(
-            df_normalized_data,
-            df_grille,
-            configs
-        )
-        nutri_score_instance.stock_database()
+    # Calculate NutriScore and store results in the database
+    nutri_score_instance = NutriScore(
+        df_normalized_data,
+        df_grille,
+        configs
+    )
+    nutri_score_instance.stock_database()
 
-        #Generate and save distribution plots
-        Plot(
-            nutri_score_instance.nutriscore['nutriscore'],
-            title='NutriScore Distribution',
-            xlabel='NutriScore',
-            ylabel='Number of Recipes',
-            output_path='nutriscore_distribution.png'
-        ).plot_distribution()
-        Plot(
-            nutri_score_instance.nutriscore_label['label'],
-            title='NutriScore Label Distribution',
-            xlabel='Labels',
-            ylabel='Number of Recipes',
-            output_path='nutriscore_label_distribution.png'
-        ).plot_distribution_label(labels=['A', 'B', 'C', 'D', 'E'])
-    except Exception as e:
-        logging.error(f"Error in the main program: {e}")
+    #Generate and save distribution plots
+    Plot(
+        nutri_score_instance.nutriscore['nutriscore'],
+        title='NutriScore Distribution',
+        xlabel='NutriScore',
+        ylabel='Number of Recipes',
+        output_path='nutriscore_distribution.png'
+    ).plot_distribution()
+    Plot(
+        nutri_score_instance.nutriscore_label['label'],
+        title='NutriScore Label Distribution',
+        xlabel='Labels',
+        ylabel='Number of Recipes',
+        output_path='nutriscore_label_distribution.png'
+    ).plot_distribution_label(labels=['A', 'B', 'C', 'D', 'E'])
+
 
 
 if __name__ == "__main__":
