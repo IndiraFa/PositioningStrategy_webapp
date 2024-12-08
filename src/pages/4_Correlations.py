@@ -37,9 +37,15 @@ def display_header():
     """
     Display the header of the page.
 
-    Returns:
-    - None
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
     """
+    logger.debug("Displaying the header of the page")
     st.markdown(
         "<h1 style='color:purple;'>Correlation analysis</h1>",
         unsafe_allow_html=True
@@ -72,7 +78,7 @@ def display_header():
         </style>
     """
     st.markdown(css_styles, unsafe_allow_html=True)
-
+    logger.debug("Displaying the key takeaways")
     st.markdown("""
         <div class="container_with_border">
             <h3>💡 Key takeaways</h3>
@@ -87,13 +93,13 @@ def display_header():
             <p>- No correlation is seen with the number of ingredients, of 
                 steps or the preparation time.</p>
             <br>
-            <p>- Finally, no strong correlation is observed with the 
+            <p>- Finally, no strong correlation were observed with the 
             interactions of the users of the website. Nevertheless, the lowest
                 lablest have the best interaction per recipe ratio, and we can 
                 conclude that all kinds of recipes are enjoyed, no matter their 
             Nutriscore.</p>
             <p><b>We recommend Mangetamain to keep a variety of recipes on the 
-                website, even it they want to promote healthy eating, beacause
+                website, even if they want to promote healthy eating, beacause
                 lower nutriscore recipes may drive trafic and interaction.
                 </b></p> 
         </div>
@@ -104,12 +110,16 @@ def display_recipe_correlation(filtered_data: pd.DataFrame):
     """
     Display the correlation analysis of the recipes.
 
-    Parameters:
-    - filtered_data: DataFrame, the filtered data.
+    Parameters
+    ----------
+    filtered_data: DataFrame
+        The filtered data.
 
-    Returns:
-    - None
+    Returns
+    -------
+    None
     """
+    logger.debug("Displaying the correlation analysis of the recipes")
     st.write(
         """
         ## 🍜 + ⏳ + 📊
@@ -168,7 +178,9 @@ def display_recipe_correlation(filtered_data: pd.DataFrame):
         st.pyplot(plt)
     else:
         st.write("Please select at least one column.")
-
+    logger.debug(
+        "Displaying the key takeaways of the recipe correlation analysis"
+    )
     st.write("""
         We can see on this heatmap the linear correlations between 
         different characteristics of the recipes:
@@ -201,17 +213,23 @@ def display_recipe_correlation(filtered_data: pd.DataFrame):
     """, unsafe_allow_html=True)
 
 
-def display_interaction_correlation(interaction_data: pd.DataFrame, nutriscore_data: pd.DataFrame):
+def display_interaction_correlation(
+        interaction_data: pd.DataFrame, nutriscore_data: pd.DataFrame):
     """
     Display the correlation analysis of the interactions.
 
-    Parameters:
-    - interaction_data: DataFrame, the interaction data.
-    - nutriscore_data: DataFrame, the nutriscore data.
+    Parameters
+    ----------
+    interaction_data: DataFrame
+        The interaction data.
+    nutriscore_data: DataFrame
+        The nutriscore data.
 
-    Returns:
-    - None
+    Returns
+    ------
+    None
     """
+    logger.debug("Displaying the correlation analysis of the interactions")
     st.write(
         """
         ## ⭐️⭐️⭐️⭐️⭐️ + 📊
@@ -242,6 +260,7 @@ def display_interaction_correlation(interaction_data: pd.DataFrame, nutriscore_d
         'nutriscore',
         'label'
     ]
+    logger.debug("Merging the interaction data with the nutriscore data")
     merged_data = int_data.merge_interaction_nutriscore(
         nutriscore_data,
         columns_to_keep_interaction
@@ -274,7 +293,7 @@ def display_interaction_correlation(interaction_data: pd.DataFrame, nutriscore_d
         )
         plt.figure(figsize=(12, 8))
         sns.heatmap(matrix, annot=True, cmap='coolwarm', fmt='.2f')
-        plt.title('Matrice de corrélation')
+        plt.title('Correlation matrix')
         st.pyplot(plt)
 
     st.write(
@@ -285,11 +304,12 @@ def display_interaction_correlation(interaction_data: pd.DataFrame, nutriscore_d
         vice versa.
         <br>
         - There is no correlation between the Nutriscore and any of these 
-        features
+        features.
         """, 
         unsafe_allow_html=True
     )
-
+    logger.debug(
+        f"diplaying the label analysis results {label_analysis_result}")
     st.dataframe(label_analysis_result)
 
     st.write(
@@ -306,7 +326,17 @@ def display_interaction_correlation(interaction_data: pd.DataFrame, nutriscore_d
 
 
 def main():
-    #SQL Queries
+    """
+    Main function to display the correlation analysis page.
+    
+    Parameters
+    ----------
+    None
+    
+    Returns
+    -------
+    None
+    """
     QUERIES = {
         "filtered_data": """
             SELECT 
@@ -333,8 +363,7 @@ def main():
             SELECT * FROM "NS_noOutliers";
         """
     }
-
-    # Récupérer les données de la base
+    logger.info("Starting the correlation analysis page")
     data = get_cached_data(db_instance, QUERIES)
 
     filtered_data = data.get("filtered_data")
@@ -345,6 +374,7 @@ def main():
     display_recipe_correlation(filtered_data)
     "---"
     display_interaction_correlation(interaction_data, nutriscore_data)
+    logger.info("Finished displaying the correlation analysis page")
 
 
 if __name__ == "__main__":
