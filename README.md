@@ -47,4 +47,9 @@ xdg-open build/html/index.html
 open build/html/index.html
 ```
 
+# Documentation Docker
+```bash
+docker compose up -d -build
+```
+
 
